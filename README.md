@@ -23,7 +23,7 @@ Proyecto de TFG que genera una ciudad de manera procedimental utilizando algorit
 1. Clonar el repositorio:
 
 ```bash
-git clone <url-del-repositorio>
+git clone https://github.com/jonas-roun/GDMC_TFG/tree/master
 ```
 
 2. Instalar gdpc para conectarse con Minecraft:

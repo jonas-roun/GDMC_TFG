@@ -27,9 +27,9 @@ def generar_parcela() -> Parcela:
     result.alto = 6
     #evitamos que la primera generación se salga de rango
     result.x = randint(0, city.width-6)
-    result.y = randint(0, city.height-6)
+    result.z = randint(0, city.height - 6)
 
-    result.uso = "residencial"
+    result.uso = "lowDesRes"
     return result
 
 def generar_genoma(parcelas: int) -> GenomaCiudad:
@@ -119,15 +119,15 @@ def es_valida_ciudad(ciudad: GenomaCiudad) -> bool:
 
     for parcela in ciudad:
         if not (0 <= parcela.x and
-                0 <= parcela.y and
+                0 <= parcela.z and
                 parcela.x + parcela.ancho <= city.buildArea.size.x and
-                parcela.y + parcela.alto <= city.buildArea.size.z):
+                parcela.z + parcela.alto <= city.buildArea.size.z):
             return False
             # Recorremos los bloques de la parcela
         for dx in range(parcela.ancho):
             for dy in range(parcela.alto):
                 x = parcela.x + dx
-                y = parcela.y + dy
+                y = parcela.z + dy
                 # Si ya está ocupado -> solapamiento
                 if grid[x][y] == 1:
                     return False
@@ -145,14 +145,14 @@ def mover_parcela(ciudad: GenomaCiudad, i:int):
         x_mov, y_mov = randint(-20,20), randint(-20,20)
         if is_in_range_move(ciudad[i], x_mov, y_mov) and validar_ciudad_move(ciudad, i, x_mov, y_mov):
             ciudad[i].x += x_mov
-            ciudad[i].y += y_mov
+            ciudad[i].z += y_mov
             return
     print("No se ha podido mover la parcela")
 
 #   Comprueba que la parcela no se salga de los límites con la modificación
 def is_in_range_move(parcela, x_mov, y_mov) -> bool:
-    return (0 <= parcela.x+x_mov and city.buildArea.size.x >= parcela.x+parcela.ancho+x_mov and
-            0<=parcela.y+y_mov and city.buildArea.size.z >= parcela.y+parcela.alto+y_mov)
+    return (0 <= parcela.x + x_mov and city.buildArea.size.x >= parcela.x + parcela.ancho + x_mov and
+            0 <= parcela.z + y_mov and city.buildArea.size.z >= parcela.z + parcela.alto + y_mov)
 
 def validar_ciudad_move(ciudad: GenomaCiudad, i,x_mov,y_mov:int) -> bool:
     grid = [[0 for _ in range(city.buildArea.size.x)] for _ in range(city.buildArea.size.z)]
@@ -163,7 +163,7 @@ def validar_ciudad_move(ciudad: GenomaCiudad, i,x_mov,y_mov:int) -> bool:
             for dy in range(ciudad[cont].alto):
                 #si es la parcela que estamos moviendo tenemos en cuenta el movimiento
                 x = ciudad[cont].x + dx + (x_mov if cont==i else 0)
-                y = ciudad[cont].y + dy + (y_mov if cont==i else 0)
+                y = ciudad[cont].z + dy + (y_mov if cont == i else 0)
                 # Si ya está ocupado -> solapamiento
                 if grid[x][y] == 1:
                     return False
@@ -182,8 +182,8 @@ def cambiar_tamano_parcela(ciudad: GenomaCiudad, i:int):
 
 
 def is_valid_resize(parcela: Parcela, x_mod, y_mod) -> bool:
-    return (parcela.ancho+x_mod > 6 and city.buildArea.size.x >= parcela.x + parcela.ancho + x_mod and
-            parcela.alto+y_mod > 6  and city.buildArea.size.z >= parcela.y + parcela.alto + y_mod)
+    return (parcela.ancho + x_mod > 6 and city.buildArea.size.x >= parcela.x + parcela.ancho + x_mod and
+            parcela.alto + y_mod > 6 and city.buildArea.size.z >= parcela.z + parcela.alto + y_mod)
 
 def validar_ciudad_resize(ciudad: GenomaCiudad, i,x_mod,y_mod:int) -> bool:
     grid = [[0 for _ in range(city.buildArea.size.x)] for _ in range(city.buildArea.size.z)]
@@ -197,7 +197,7 @@ def validar_ciudad_resize(ciudad: GenomaCiudad, i,x_mod,y_mod:int) -> bool:
         for dx in range(width):
             for dy in range(height):
                 x = ciudad[cont].x + dx
-                y = ciudad[cont].y + dy
+                y = ciudad[cont].z + dy
 
                 # Si ya está ocupado -> solapamiento
                 if grid[x][y] == 1:

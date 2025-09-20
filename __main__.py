@@ -13,6 +13,7 @@ def construir_ciudad(numero_parcelas: int):
     for i in range(len(ciudad)):
         print("parcela: ", ciudad[i],"->", ciudad[i].validity())
         ciudad[i].level_plot()
+        ciudad[i].construir()
 
 
 def main():

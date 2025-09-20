@@ -34,7 +34,7 @@ canvas = None
 def setup():
     global editor, height, width, buildArea, heightmap, blocks_matrix
 
-    editor = Editor()
+    editor = Editor(buffering=True)
     buildArea = editor.getBuildArea()
     editor.loadWorldSlice(cache=True)
 
@@ -61,7 +61,7 @@ def calculate_maps():
     blocks_values = [[blocks_matrix[x][y][1].id for y in range(width)] for x in range(height)]
 
     # b) Altura
-    height_values = [[blocks_matrix[x][y][0].y for y in range(width)] for x in range(height)]
+    height_values = [[blocks_matrix[x][y][0].z for y in range(width)] for x in range(height)]
 
     # c) Inclinación (gradiente)
     max_h, min_h = heightmap.max(), heightmap.min()

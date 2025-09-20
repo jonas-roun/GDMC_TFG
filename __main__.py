@@ -8,15 +8,11 @@ from gdpc.geometry import placeCuboid, placeRectOutline
 
 def construir_ciudad(numero_parcelas: int):
     ag.numero_de_parcelas = numero_parcelas
-    poblacion, _ = generar_ciudad(10, 100)
+    poblacion, _ = generar_ciudad(10, 200)
     ciudad = poblacion[0]  # ahora sí es un GenomaCiudad (lista de parcelas)
     for i in range(len(ciudad)):
-        print("parcela: ", ciudad[i],"->", ciudad[i].desnivel())
-        placeCuboid(city.editor, (city.buildArea.offset.x + ciudad[i].x, city.height_values[ciudad[i].x][ciudad[i].y],
-                                  city.buildArea.offset.z + ciudad[i].y),
-                    (city.buildArea.offset.x + ciudad[i].x + ciudad[i].ancho-1,
-                     city.height_values[ciudad[i].x][ciudad[i].y] + 5,
-                     city.buildArea.offset.z + ciudad[i].y + ciudad[i].alto-1), Block("white_terracotta"))
+        print("parcela: ", ciudad[i],"->", ciudad[i].validity())
+        ciudad[i].level_plot()
 
 
 def main():

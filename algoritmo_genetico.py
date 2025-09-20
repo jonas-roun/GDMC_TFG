@@ -47,14 +47,17 @@ def generar_poblacion(tamano: int) -> PoblacionMuestra:
     return [generar_genoma(numero_de_parcelas) for _ in range(tamano)]
 
 def funcion_adecuacion(ciudad: GenomaCiudad) -> float:
-    UNEVEN_PENALTY = 10
-    WATER_PENALTY = 4
+    UNEVEN_PENALTY = 50
+    WATER_PENALTY = 2500
     penalizaciones = 0
+
     for parcela in ciudad:
         try:
+            if parcela.blocks_in_water() > parcela.alto * parcela.ancho*0.8:
+                penalizaciones += 1000000000            #EVITAR PARCELAS COMPLETAMENTE (O CASI) EN EL AGUA!!!!!
             penalizaciones += parcela.blocks_in_water() * WATER_PENALTY
             penalizaciones += parcela.desnivel() * UNEVEN_PENALTY
-        except IndexError: return 0.0001
+        except IndexError: return 0.000000001
 
     fitness = 1/(1+abs(penalizaciones))
     return fitness

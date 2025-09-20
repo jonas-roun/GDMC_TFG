@@ -11,7 +11,7 @@ Proyecto de TFG que genera una ciudad de manera procedimental utilizando algorit
 * Algoritmo genético con selección, cruce y mutación.
 * Control de solapamiento de parcelas mediante matriz de ocupación.
 * Mutaciones de movimiento y redimensionamiento de parcelas con validación de ciudad.
-* Visualización opcional de la ciudad.
+* Allanamiento de las parcelas creadas para su posterior construcción
 
 ## Requisitos
 
@@ -41,6 +41,7 @@ pip install -r gdpc
 3. Indicar el número de parcelas a construir y darle al botón de construir
 
 ## Futuras adiciones
+* Construcción de casas básicas en las parcelas generadas
 * Caminos entre las parcelas
 * Refinar el algoritmo para colocar parcelas
 * Cambios estéticos

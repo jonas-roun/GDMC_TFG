@@ -13,6 +13,8 @@ def construir_ciudad(numero_parcelas: int):
     for i in range(len(ciudad)):
         print("parcela: ", ciudad[i],"->", ciudad[i].validity())
         ciudad[i].level_plot()
+        ciudad[i].construir()
+        city.editor.flushBuffer()
 
 
 def main():
@@ -30,13 +32,14 @@ def main():
     frame_controles = tk.Frame(root)
 
     tk.Button(frame_controles, text="Delinear zona de construcción",
-              command=lambda: placeRectOutline(city.editor, city.buildArea.toRect(), 140, Block("red_concrete"))).pack(
+              command=lambda: (placeRectOutline(city.editor, city.buildArea.toRect(), 140, Block("red_concrete")), city.editor.flushBuffer())).pack(
         side="top", expand=True)
 
     refresh_icon = tk.PhotoImage(file="data/img/refresh.png")
     tk.Button(frame_controles, text="Refrescar mapas", image=refresh_icon,
               command=lambda: city.refresh_maps()).pack(
         side="top", expand=True)
+
 
     # Etiqueta
     tk.Label(frame_controles, text="Número de parcelas:").pack(pady=5)

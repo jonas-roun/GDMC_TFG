@@ -1,9 +1,13 @@
+import random
+
 from gdpc import Block, Rect
 from gdpc.geometry import placeCuboid
-from gdpc.geometry import placeRectOutline
 
 import city_simulator as city
 import statistics
+
+
+
 
 class Parcela:
 
@@ -12,7 +16,13 @@ class Parcela:
         self.ancho = None
         self.x = None
         self.y = None
+        self.altura = None
         self.uso = None
+        self.constructor = None
+        self.desnivel_esquinas = None
+        self.floorplan = None
+        self.mainBlock = None
+        self.floorBlock = None
 
     def definir(self, alto, ancho, x, y, uso):
         self.alto = alto
@@ -67,8 +77,15 @@ class Parcela:
     def __str__(self):
         return f"Parcela {self.uso} de tamaño {self.alto}x{self.ancho}, ubicada en ({self.x}, {self.y})"
 
+    def construir(self):
+        from .Builder import get_constructor
+        self.uso = random.choices(["lowDesRes", "hiDesRes"], weights=[0.99, 0.01])[0]
+        get_constructor(self, self.uso).construir(self)
+
     def level_plot(self):
         altura_parcela = self.altura_representativa()
+        self.altura = altura_parcela
+        self.desnivel_esquinas = [0,0,0,0]
         for i in range(self.ancho):
             for j in range(self.alto):
                 altura_actual = city.height_values[self.x + i][self.y + j]
@@ -83,4 +100,12 @@ class Parcela:
                     (city.buildArea.offset.x + self.x + i, y1, city.buildArea.offset.z + self.y + j),
                     Block(bloque)
                 )
-        placeRectOutline(city.editor, Rect(offset=(city.buildArea.offset.x+self.x, city.buildArea.offset.z+self.y), size=(self.ancho, self.alto)) ,altura_parcela+1,Block("minecraft:oak_fence"))
+
+                if(i==0 and j==0):
+                    self.desnivel_esquinas[0] = altura_actual-altura_parcela
+                elif (i==0 and j==self.ancho-1):
+                    self.desnivel_esquinas[1] = altura_actual-altura_parcela
+                elif (i==self.alto-1 and j==0):
+                    self.desnivel_esquinas[2] = altura_actual-altura_parcela
+                elif (i==self.alto-1 and j==self.ancho-1):
+                    self.desnivel_esquinas[3] = altura_actual-altura_parcela

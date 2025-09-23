@@ -34,7 +34,7 @@ canvas = None
 def setup():
     global editor, height, width, buildArea, heightmap, blocks_matrix
 
-    editor = Editor()
+    editor = Editor(buffering=True)
     buildArea = editor.getBuildArea()
     editor.loadWorldSlice(cache=True)
 

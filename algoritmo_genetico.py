@@ -3,7 +3,7 @@ from random import choices, randint, uniform
 from typing import List, Callable, Tuple
 
 import city_simulator as city
-from urbanismo import Parcela
+from urbanismo.parcela import Parcela
 
 GenomaCiudad = List[Parcela]
 PoblacionMuestra = List[GenomaCiudad]
@@ -15,6 +15,7 @@ MutationFunc = Callable[[GenomaCiudad], GenomaCiudad]
 
 MAX_TRIES = 100
 numero_de_parcelas = 0
+TAMANO_MINIMO_PARCELA = 6
 
 def set_numero_de_parcela(i):
     global numero_de_parcelas
@@ -23,11 +24,11 @@ def set_numero_de_parcela(i):
 def generar_parcela() -> Parcela:
     result = Parcela()
     #empezamos con el menor tamaño posible para restringir menos al principio
-    result.ancho = 6
-    result.alto = 6
+    result.ancho = TAMANO_MINIMO_PARCELA
+    result.alto = TAMANO_MINIMO_PARCELA
     #evitamos que la primera generación se salga de rango
-    result.x = randint(0, city.width-6)
-    result.y = randint(0, city.height-6)
+    result.x = randint(0, city.width-TAMANO_MINIMO_PARCELA)
+    result.y = randint(0, city.height-TAMANO_MINIMO_PARCELA)
 
     result.uso = "residencial"
     return result
@@ -47,8 +48,8 @@ def generar_poblacion(tamano: int) -> PoblacionMuestra:
     return [generar_genoma(numero_de_parcelas) for _ in range(tamano)]
 
 def funcion_adecuacion(ciudad: GenomaCiudad) -> float:
-    UNEVEN_PENALTY = 50
-    WATER_PENALTY = 2500
+    UNEVEN_PENALTY = 3
+    WATER_PENALTY = 10
     penalizaciones = 0
 
     for parcela in ciudad:
@@ -57,10 +58,11 @@ def funcion_adecuacion(ciudad: GenomaCiudad) -> float:
                 penalizaciones += 1000000000            #EVITAR PARCELAS COMPLETAMENTE (O CASI) EN EL AGUA!!!!!
             penalizaciones += parcela.blocks_in_water() * WATER_PENALTY
             penalizaciones += parcela.desnivel() * UNEVEN_PENALTY
+            penalizaciones+=abs(parcela.alto-parcela.ancho)*max(parcela.alto,parcela.ancho)+parcela.alto*parcela.ancho
         except IndexError: return 0.000000001
 
     fitness = 1/(1+abs(penalizaciones))
-    return fitness
+    return fitness*fitness
 
 
 def seleccionar_pareja(generacion: PoblacionMuestra, fitness_func: FitnessFunc) -> PoblacionMuestra:
@@ -97,7 +99,7 @@ def cruce_un_punto(a: GenomaCiudad, b: GenomaCiudad) -> Tuple[GenomaCiudad, Geno
 def mutar_ciudad(ciudad: GenomaCiudad) -> GenomaCiudad:
     for i in range(len(ciudad)):
         #mutamos cada parcela aleatoriamente
-        if(uniform(0, 1) < 0.6):
+        if(uniform(0, 1) < 0.7):
             mutar_parcela(ciudad, i)
     return ciudad
 
@@ -182,8 +184,8 @@ def cambiar_tamano_parcela(ciudad: GenomaCiudad, i:int):
 
 
 def is_valid_resize(parcela: Parcela, x_mod, y_mod) -> bool:
-    return (parcela.ancho+x_mod > 6 and city.buildArea.size.x >= parcela.x + parcela.ancho + x_mod and
-            parcela.alto+y_mod > 6  and city.buildArea.size.z >= parcela.y + parcela.alto + y_mod)
+    return (parcela.ancho+x_mod > TAMANO_MINIMO_PARCELA and city.buildArea.size.x >= parcela.x + parcela.ancho + x_mod and
+            parcela.alto+y_mod > TAMANO_MINIMO_PARCELA  and city.buildArea.size.z >= parcela.y + parcela.alto + y_mod)
 
 def validar_ciudad_resize(ciudad: GenomaCiudad, i,x_mod,y_mod:int) -> bool:
     grid = [[0 for _ in range(city.buildArea.size.x)] for _ in range(city.buildArea.size.z)]

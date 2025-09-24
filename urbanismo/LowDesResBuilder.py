@@ -9,38 +9,34 @@ from .parcela import Parcela
 from .materials import getBlock
 
 class LowDesResBuilder:
-    def __init__(self, parcela: Parcela):
-        self.x0 = 0
-        self.z0 = 0
-        self.floorplan = None
-        self.mainBlock = None
-        self.floorBlock = None
-        self.most_sloped_corner = parcela.desnivel_esquinas.index(max(parcela.desnivel_esquinas))
+    # def construir(self, parcela):
+    #     self.floorplan = np.zeros((parcela.alto, parcela.ancho), dtype=int)
+    #
+    #     self.x0 = city.buildArea.offset.x + parcela.x
+    #     self.z0 = city.buildArea.offset.z + parcela.y
+    #     #placeRectOutline(city.editor, Rect(offset=(x0, z0),
+    #            #                            size=(parcela.ancho, parcela.alto)), parcela.altura + 1,
+    #            #          Block("minecraft:oak_fence"))
+    #     self.mainBlock = getBlock("wall")
+    #     self.floorBlock = getBlock("floor")
+    #     self.create_floorplan()
+    #     self.build_floorplan(parcela)
+    #     #placeCuboidHollow(city.editor, (self.x0, parcela.altura, self.z0), (self.x0+parcela.ancho-1, parcela.altura+4, self.z0+parcela.alto-1), self.mainBlock)
+    #     print(f"Construyendo chalet con {self.mainBlock} en {parcela.x}, {parcela.y}")
 
-    def construir(self, parcela):
-        self.floorplan = np.zeros((parcela.alto, parcela.ancho), dtype=int)
-
-        self.x0 = city.buildArea.offset.x + parcela.x
-        self.z0 = city.buildArea.offset.z + parcela.y
-        #placeRectOutline(city.editor, Rect(offset=(x0, z0),
-               #                            size=(parcela.ancho, parcela.alto)), parcela.altura + 1,
-               #          Block("minecraft:oak_fence"))
-        self.mainBlock = getBlock("wall")
-        self.floorBlock = getBlock("floor")
-        self.create_floorplan()
-        self.build_floorplan(parcela)
-        #placeCuboidHollow(city.editor, (self.x0, parcela.altura, self.z0), (self.x0+parcela.ancho-1, parcela.altura+4, self.z0+parcela.alto-1), self.mainBlock)
-        print(f"Construyendo chalet con {self.mainBlock} en {parcela.x}, {parcela.y}")
-
-    def create_floorplan(self) -> None:
-        alto_total = self.floorplan.shape[0]
-        ancho_total = self.floorplan.shape[1]
+    @staticmethod
+    def create_floorplan(parcela: Parcela) -> None:
+        parcela.floorplan = np.zeros((parcela.alto, parcela.ancho), dtype=int)
+        alto_total = parcela.alto
+        ancho_total = parcela.ancho
 
         border_value = 1
         fill_value = 2
+        corner_value = 3
+        door_value = 4
 
         if alto_total <= 8 and ancho_total <= 8:
-            # Parcela pequeña: ocupar todo
+            # Parcela pequeña: ocupar to do
             y0, x0 = 0, 0
             alto, ancho = alto_total, ancho_total
         else:
@@ -51,27 +47,58 @@ class LowDesResBuilder:
             x0 = random.randint(0, ancho_total - ancho)
 
         # Borde
-        self.floorplan[y0:y0 + alto, x0] = border_value
-        self.floorplan[y0:y0 + alto, x0 + ancho - 1] = border_value
-        self.floorplan[y0, x0:x0 + ancho] = border_value
-        self.floorplan[y0 + alto - 1, x0:x0 + ancho] = border_value
+        parcela.floorplan[y0:y0 + alto, x0] = border_value
+        parcela.floorplan[y0:y0 + alto, x0 + ancho - 1] = border_value
+        parcela.floorplan[y0, x0:x0 + ancho] = border_value
+        parcela.floorplan[y0 + alto - 1, x0:x0 + ancho] = border_value
 
+        parcela.floorplan[y0, x0] = corner_value
+        parcela.floorplan[y0 + alto - 1, x0] = corner_value
+        parcela.floorplan[y0, x0 + ancho - 1] = corner_value
+        parcela.floorplan[y0 + alto - 1, x0+ancho-1] = corner_value
 
-        self.floorplan[y0 + 1:y0 + alto - 1, x0 + 1:x0 + ancho - 1] = fill_value
+        # Lista de coordenadas prohibidas (fila, columna)
+        esquinas = [(y0, x0), (y0+alto-1, x0),(y0, x0+ancho-1),(y0+alto-1, x0+ancho-1)]
 
-    def build_floorplan(self, parcela: Parcela):
-        placeRectOutline(city.editor, Rect(offset=(self.x0, self.z0),
+        # Encuentra todas las coordenadas con old_value
+        indices = np.argwhere(parcela.floorplan == border_value)
+
+        # Filtra las prohibidas
+        paredes = [tuple(idx) for idx in indices if tuple(idx) not in esquinas]
+
+        if paredes:
+            # Elige una coordenada aleatoria entre las válidas
+            y, x = paredes[np.random.choice(len(paredes))]
+            parcela.floorplan[y, x] = door_value
+
+        parcela.floorplan[y0 + 1:y0 + alto - 1, x0 + 1:x0 + ancho - 1] = fill_value
+
+    @staticmethod
+    def build_floorplan(parcela: Parcela):
+        x = parcela.x + city.buildArea.offset.x
+        y = parcela.y + city.buildArea.offset.z
+        placeRectOutline(city.editor, Rect(offset=(x, y),
                                            size=(parcela.ancho, parcela.alto)), parcela.altura + 1,
                          Block("minecraft:cobblestone_wall"))
         alto = parcela.alto
         ancho = parcela.ancho
-        pprint.pprint(self.floorplan)
+        pprint.pprint(parcela.floorplan)
         for i in range(alto):
             for j in range(ancho):
                 for k in range(5):
-                    if k==0 or k==4:
-                        if self.floorplan[i][j]==2:
-                            city.editor.placeBlock((self.x0 + j, parcela.altura + k, self.z0 + i), self.floorBlock)
 
-                    if self.floorplan[i][j] ==1:
-                        city.editor.placeBlock((self.x0+j, parcela.altura+k, self.z0+i), self.mainBlock)
+                    if parcela.floorplan[i][j] ==1:
+                        city.editor.placeBlock((x+j, parcela.altura+k, y+i), parcela.mainBlock)
+                    elif parcela.floorplan[i][j] == 2:
+                        if k == 0 or k == 4:
+                            city.editor.placeBlock((x + j, parcela.altura + k, y + i), parcela.floorBlock)
+                    elif parcela.floorplan[i][j]==3:
+                        city.editor.placeBlock((x + j, parcela.altura + k, y + i), parcela.columnBlock)
+                    elif parcela.floorplan[i][j]==4:
+                        if k == 0 or k==3 or k == 4:
+                            city.editor.placeBlock((x + j, parcela.altura + k, y + i), parcela.mainBlock)
+                        elif k == 1:
+                            city.editor.placeBlock((x + j, parcela.altura + k, y + i), Block("air"))
+                            city.editor.placeBlock((x + j, parcela.altura + k, y + i), Block("oak_door"))
+
+

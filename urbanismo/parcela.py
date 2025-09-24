@@ -6,7 +6,7 @@ from gdpc.geometry import placeCuboid
 import city_simulator as city
 import statistics
 
-
+from urbanismo.materials import getBlock
 
 
 class Parcela:
@@ -21,15 +21,17 @@ class Parcela:
         self.constructor = None
         self.desnivel_esquinas = None
         self.floorplan = None
-        self.mainBlock = None
-        self.floorBlock = None
+        self.mainBlock = getBlock("wall")
+        self.floorBlock = getBlock("floor")
+        self.columnBlock = getBlock("column")
 
-    def definir(self, alto, ancho, x, y, uso):
+    def definir(self, alto, ancho, x, y, uso, floorplan):
         self.alto = alto
         self.ancho = ancho
         self.x = x
         self.y = y
         self.uso = uso
+        self.floorplan = floorplan
 
     def desnivel(self) ->int:
         result = 0
@@ -70,17 +72,28 @@ class Parcela:
 
     def copy(self):
         parcela = Parcela()
-        parcela.definir(self.alto, self.ancho, self.x, self.y, self.uso)
+        parcela.definir(self.alto, self.ancho, self.x, self.y, self.uso, self.floorplan)
         return parcela
 
 
     def __str__(self):
         return f"Parcela {self.uso} de tamaño {self.alto}x{self.ancho}, ubicada en ({self.x}, {self.y})"
 
+
+    def generate_floorplan(self):
+        from.Builder import get_constructor
+        get_constructor(self, self.uso).create_floorplan(self)
+
     def construir(self):
         from .Builder import get_constructor
-        self.uso = random.choices(["lowDesRes", "hiDesRes"], weights=[0.99, 0.01])[0]
-        get_constructor(self, self.uso).construir(self)
+        get_constructor(self, self.uso).build_floorplan(self)
+
+
+    def mutar_floorplan(self):
+        # mover puerta (exterior)
+        # mover casa dentro de parcela
+        # cambiar tamaño casa dentro de parcela
+        pass
 
     def level_plot(self):
         altura_parcela = self.altura_representativa()

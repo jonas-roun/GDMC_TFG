@@ -5,9 +5,9 @@ from .parcela import Parcela
 
 def get_constructor(parcela: Parcela,uso):
     if uso == "lowDesRes":
-        return LowDesResBuilder(parcela)
+        return LowDesResBuilder()
     elif uso == "hiDesRes":
-        return HiDesResBuilder(parcela)
+        return HiDesResBuilder()
     else:
         raise ValueError(f"Uso desconocido: {uso}")
 

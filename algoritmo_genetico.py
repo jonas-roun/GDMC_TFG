@@ -2,6 +2,8 @@ from functools import partial
 from random import choices, randint, uniform
 from typing import List, Callable, Tuple
 
+import numpy as np
+
 import city_simulator as city
 from urbanismo.parcela import Parcela
 
@@ -30,13 +32,15 @@ def generar_parcela() -> Parcela:
     result.x = randint(0, city.width-TAMANO_MINIMO_PARCELA)
     result.y = randint(0, city.height-TAMANO_MINIMO_PARCELA)
 
-    result.uso = "residencial"
+    result.uso = "lowDesRes"
+
+    result.generate_floorplan()
     return result
 
 def generar_genoma(parcelas: int) -> GenomaCiudad:
     genoma = []
     for _ in range(parcelas):
-        while(True):
+        while True:
             parcela = generar_parcela()
             if es_valida_ciudad(genoma + [parcela]):
                 genoma.append(parcela)
@@ -179,6 +183,10 @@ def cambiar_tamano_parcela(ciudad: GenomaCiudad, i:int):
         if is_valid_resize(ciudad[i], x_mod, y_mod) and validar_ciudad_resize(ciudad, i, x_mod, y_mod):
             ciudad[i].ancho += x_mod
             ciudad[i].alto += y_mod
+            if x_mod >= 0 and y_mod >= 0:
+                ciudad[i].floorplan = np.pad(ciudad[i].floorplan, ((0, y_mod), (0, x_mod)), mode='constant', constant_values=0)
+            else:
+                ciudad[i].generate_floorplan() #si disminuye una dimension rehacer parcela para evitar cortes
             return
     print("No se ha podido cambiar el tamano")
 

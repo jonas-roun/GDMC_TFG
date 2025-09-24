@@ -48,8 +48,7 @@ def manageBlockVariations(block: str) -> List[Block]:
             if wood_type=="crimson" or wood_type=="warped":
                 block = "stem"
             if wood_type=="bamboo":
-                result += [Block(f"block_of_bamboo")]
-                return result
+                block = "block"
         result += [Block(f"{wood_type}_{block}")]
 
     return result

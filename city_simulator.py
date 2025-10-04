@@ -2,17 +2,8 @@
 from gdpc import Editor, Block
 from gdpc.vector_tools import vec3
 
-# Colores por bloque
-natural_blocks_colors = {
-    "minecraft:grass_block": "#7CFC00",
-    "minecraft:dirt": "#8B4513",
-    "minecraft:stone": "#808080",
-    "minecraft:water": "#1E90FF",
-    "minecraft:lava": "#FF4500",
-    "minecraft:snow_block": "#FFFFFF",
-    "minecraft:clay": "#B0C4DE",
-    "minecraft:sand": "#FFF5BA"
-}
+import utils
+
 cell_size = 5
 height, width = 0, 0
 buildArea = None
@@ -37,6 +28,7 @@ def setup():
     editor = Editor(buffering=True)
     buildArea = editor.getBuildArea()
     editor.loadWorldSlice(cache=True)
+    utils.load_block_colors("data/blockmodel_avgs.csv")
 
     heightmap = editor.worldSlice.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
     height, width = heightmap.shape
@@ -58,7 +50,7 @@ def setup():
 def calculate_maps():
     global blocks_values, height_values, inclination_values, buildable_values
     # a) Tipo de bloque
-    blocks_values = [[blocks_matrix[x][y][1].id for y in range(width)] for x in range(height)]
+    blocks_values = [[blocks_matrix[x][y][1].id.replace("minecraft:", "") for y in range(width)] for x in range(height)]
 
     # b) Altura
     height_values = [[blocks_matrix[x][y][0].y for y in range(width)] for x in range(height)]
@@ -90,7 +82,7 @@ def calculate_maps():
 # ==============================
 def value_to_color(mode, x, y):
     if mode == "blocks":
-        return natural_blocks_colors.get(blocks_values[x][y], "#000000")
+        return utils.get_block_color(blocks_values[x][y])
     elif mode == "height":
         global_min_h = min(map(min, height_values))
         global_max_h = max(map(max, height_values))

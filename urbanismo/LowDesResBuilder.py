@@ -5,6 +5,7 @@ from gdpc import Block, Rect
 from gdpc.geometry import placeRectOutline
 
 import city_simulator as city
+from grammar import room_grammar
 from .parcela import Parcela
 from .materials import getBlock
 
@@ -23,6 +24,19 @@ class LowDesResBuilder:
     #     self.build_floorplan(parcela)
     #     #placeCuboidHollow(city.editor, (self.x0, parcela.altura, self.z0), (self.x0+parcela.ancho-1, parcela.altura+4, self.z0+parcela.alto-1), self.mainBlock)
     #     print(f"Construyendo chalet con {self.mainBlock} en {parcela.x}, {parcela.y}")
+    @staticmethod
+    def build(parcela: Parcela):
+        blocks = room_grammar.get_room(parcela)
+
+        # Colocar los bloques en el mundo
+        for coord, block in blocks.items():
+            if isinstance(block[0], Block):
+                city.editor.placeBlock((coord[0]+city.buildArea.offset.x, coord[1],coord[2]+city.buildArea.offset.z), block)
+            else:
+                print(block)
+
+        # Confirmar cambios (importante si usamos buffering=True)
+        city.editor.flushBuffer()
 
     @staticmethod
     def create_floorplan(parcela: Parcela) -> None:

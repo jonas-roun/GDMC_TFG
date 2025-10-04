@@ -86,7 +86,7 @@ class Parcela:
 
     def construir(self):
         from .Builder import get_constructor
-        get_constructor(self, self.uso).build_floorplan(self)
+        get_constructor(self, self.uso).build(self)
 
 
     def mutar_floorplan(self):

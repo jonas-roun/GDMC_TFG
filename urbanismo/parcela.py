@@ -24,6 +24,8 @@ class Parcela:
         self.mainBlock = getBlock("wall")
         self.floorBlock = getBlock("floor")
         self.columnBlock = getBlock("column")
+        self.fenceBlock = getBlock("fence")
+        self.door=getBlock("door")
 
     def definir(self, alto, ancho, x, y, uso, floorplan):
         self.alto = alto

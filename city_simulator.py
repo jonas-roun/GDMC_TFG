@@ -75,7 +75,7 @@ def calculate_maps():
             inclination_values[x][y] = min(int(255 * (total_diff / max_grad)), 255)
 
     # d) Edificabilidad
-    buildable_values = [[blocks_values[x][y] != "minecraft:water" for y in range(width)] for x in range(height)]
+    buildable_values = [[blocks_values[x][y] != "water" for y in range(width)] for x in range(height)]
 
 # ==============================
 # 3) Función de conversión a color

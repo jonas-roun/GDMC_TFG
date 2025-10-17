@@ -32,8 +32,6 @@ class LowDesResBuilder:
         for coord, block in blocks.items():
             if isinstance(block[0], Block):
                 city.editor.placeBlock((coord[0]+city.buildArea.offset.x, coord[1],coord[2]+city.buildArea.offset.z), block)
-            else:
-                print(block)
 
         # Confirmar cambios (importante si usamos buffering=True)
         city.editor.flushBuffer()

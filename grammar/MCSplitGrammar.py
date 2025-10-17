@@ -6,7 +6,7 @@ from grammar.SplitGrammar import rule, split, reorient, void, fill, Dimension, D
 # Scope adaptado para almacenar bloques en un diccionario
 # --------------------------------------------------
 # Clase MCScope compatible con SplitGrammar
-class MCScope(Scope):
+class MCScope(SplitGrammar.Scope):
     def __init__(self, level, box, **kwargs):
         super(MCScope, self).__init__(box, **kwargs)
         self.level = level

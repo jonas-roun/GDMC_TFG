@@ -32,9 +32,9 @@ def generar_parcela() -> Parcela:
     result.x = randint(0, city.width-TAMANO_MINIMO_PARCELA)
     result.y = randint(0, city.height-TAMANO_MINIMO_PARCELA)
 
-    result.uso = "lowDesRes"
+    result.uso = "lowDesRes" if randint(0,1) == 0 else "hiDesRes"
 
-    result.generate_floorplan()
+    # result.generate_floorplan()
     return result
 
 def generar_genoma(parcelas: int) -> GenomaCiudad:
@@ -53,7 +53,7 @@ def generar_poblacion(tamano: int) -> PoblacionMuestra:
 
 def funcion_adecuacion(ciudad: GenomaCiudad) -> float:
     UNEVEN_PENALTY = 3
-    WATER_PENALTY = 10
+    WATER_PENALTY = 40
     penalizaciones = 0
 
     for parcela in ciudad:
@@ -62,7 +62,7 @@ def funcion_adecuacion(ciudad: GenomaCiudad) -> float:
                 penalizaciones += 1000000000            #EVITAR PARCELAS COMPLETAMENTE (O CASI) EN EL AGUA!!!!!
             penalizaciones += parcela.blocks_in_water() * WATER_PENALTY
             penalizaciones += parcela.desnivel() * UNEVEN_PENALTY
-            penalizaciones+=abs(parcela.alto-parcela.ancho)*max(parcela.alto,parcela.ancho)+parcela.alto*parcela.ancho
+            #penalizaciones+=abs(parcela.alto-parcela.ancho)*max(parcela.alto,parcela.ancho)+parcela.alto*parcela.ancho
         except IndexError: return 0.000000001
 
     fitness = 1/(1+abs(penalizaciones))
@@ -183,10 +183,10 @@ def cambiar_tamano_parcela(ciudad: GenomaCiudad, i:int):
         if is_valid_resize(ciudad[i], x_mod, y_mod) and validar_ciudad_resize(ciudad, i, x_mod, y_mod):
             ciudad[i].ancho += x_mod
             ciudad[i].alto += y_mod
-            if x_mod >= 0 and y_mod >= 0:
-                ciudad[i].floorplan = np.pad(ciudad[i].floorplan, ((0, y_mod), (0, x_mod)), mode='constant', constant_values=0)
-            else:
-                ciudad[i].generate_floorplan() #si disminuye una dimension rehacer parcela para evitar cortes
+            # if x_mod >= 0 and y_mod >= 0:
+            #     ciudad[i].floorplan = np.pad(ciudad[i].floorplan, ((0, y_mod), (0, x_mod)), mode='constant', constant_values=0)
+            # else:
+            #     ciudad[i].generate_floorplan() #si disminuye una dimension rehacer parcela para evitar cortes
             return
     print("No se ha podido cambiar el tamano")
 

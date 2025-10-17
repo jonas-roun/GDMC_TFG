@@ -16,10 +16,16 @@ coloured_blocks = ["concrete", "terracotta"]
 woods = ["oak", "spruce", "birch", "jungle", "acacia", "dark_oak",
               "mangrove", "cherry", "pale_oak", "bamboo", "crimson", "warped"]
 wood_blocks = ["planks", "door", "fence", "log"]
+wall_blocks = ["cobblestone","stone_brick","granite","diorite", "andesite", "cobbled_deepslate", "polished_deepslate", "deepslate_brick", "deepslate_tile", "tuff", "polished_tuff", "tuff_brick", "brick", "mud_brick", "resin_brick", "sandstone", "red_sandstone", "prismarine", "nether_brick", "red_nether_brick", "blackstone", "polished_blackstone", "polished_blackstone_brick", "end_stone_brick"]
+
+fence_blocks = ["fence", "wall"]
 
 wallBlocks = ["concrete", "cobblestone", "terracotta"] +buildingBricks
 
-column_blocks = ["log", "quartz_pillar"]
+column_blocks = ["log", "quartz_pillar", "polished_basalt"]
+
+
+door_materials = woods + ["waxed_copper", "waxed_oxidized_copper"]
 
 #mossy_blocks = ["stone_bricks", "cobblestone"]
 #blocks with a cracked variant
@@ -51,10 +57,11 @@ def manageBlockVariations(block: str) -> List[Block]:
                 block = "block"
         result += [Block(f"{wood_type}_{block}")]
 
+
     return result
 
 
-def getBlock(purpose: str, facing=None, half=None) -> List[Block]:
+def getBlock(purpose: str, facing=None, hinge=None, half=None) -> List[Block]:
     if purpose == "wall":
         block = random.choice(wallBlocks)
         return manageBlockVariations(block)
@@ -64,6 +71,17 @@ def getBlock(purpose: str, facing=None, half=None) -> List[Block]:
     elif purpose == "column":
         block = random.choice(column_blocks)
         return manageBlockVariations(block)
+    elif purpose == "fence":
+        block = random.choice(fence_blocks)
+        if block == "fence":
+            return [Block(random.choice(woods)+"_fence")]
+        else:
+            return [Block(random.choice(wall_blocks)+"_wall")]
+    elif purpose == "gate":
+        return [Block(random.choice(woods)+"_fence_gate")]
+    elif purpose == "door":
+        return [Block(random.choice(door_materials)+"door")]
+
     else:
         raise ValueError(f"Unknown purpose: {purpose}")
         

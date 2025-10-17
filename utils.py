@@ -43,4 +43,6 @@ def load_block_colors(csv_path, include_alpha=False):
 def get_block_color(block_name: str) -> str:
     if block_name == "grass_block":
         return "#4ADB48"
+    elif block_name == "water":
+        return "#1d8df0"
     return block_color[block_name]

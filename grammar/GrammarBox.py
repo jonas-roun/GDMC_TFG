@@ -42,6 +42,7 @@ class Vector(_Vector):
     def intfloor(self):
         return Vector(*[int(math.floor(p)) for p in self])
 
+
 class BoundingBox(object):
     type = int
 
@@ -129,8 +130,8 @@ class BoundingBox(object):
          if there is no common area.
         """
         if (self.minx > box.maxx or self.maxx < box.minx or
-                    self.miny > box.maxy or self.maxy < box.miny or
-                    self.minz > box.maxz or self.maxz < box.minz):
+                self.miny > box.maxy or self.maxy < box.miny or
+                self.minz > box.maxz or self.maxz < box.minz):
             # Zero size intersection.
             return BoundingBox()
 
@@ -195,4 +196,3 @@ class BoundingBox(object):
 
 
 
-  

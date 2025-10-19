@@ -68,7 +68,7 @@ def blockPlot():
 
         with split(Dimension.Y, floor_sizes):
             for _ in range(num_floors):
-                chalet()
+                room()
             if remaining > 0:
                 void()
 

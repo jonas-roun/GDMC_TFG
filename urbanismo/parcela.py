@@ -92,7 +92,7 @@ class Parcela:
         UNEVEN_PENALTY = 1
         WATER_PENALTY = 20
         result = 0
-        if self.blocks_in_water() > self.alto * self.ancho * 0.8:
+        if self.blocks_in_water() == self.alto * self.ancho:
             result += 1000000000  # EVITAR PARCELAS COMPLETAMENTE (O CASI) EN EL AGUA!!!!!
         result += self.blocks_in_water() * WATER_PENALTY
         result += self.desnivel() * UNEVEN_PENALTY

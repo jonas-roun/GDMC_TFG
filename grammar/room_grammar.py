@@ -6,7 +6,7 @@ from gdpc import Editor, Block
 from grammar import MCSplitGrammar, SplitGrammar
 from grammar.MCSplitGrammar import collect_blocks, start_symbol
 from urbanismo.parcela import Parcela
-from .SplitGrammar import rule, split, fill, void, Dimension, clearrules, CONTEXT, reorient
+from .SplitGrammar import rule, split, fill, void, Dimension, clearrules, CONTEXT, reorient, rotate
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -15,7 +15,6 @@ COLUMN_BLOCK = 3
 FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
-
 
 CURRENT_PLOT: Parcela
 
@@ -30,35 +29,20 @@ clearrules(__file__)
 
 @rule
 def plot():
+    """
+    Rota la parcela aleatoriamente 0, 90, 180 o 270 grados
+    """
     orientacion = randint(0, 3)
+    rotation_degrees = orientacion * 90  # 0, 90, 180, 270
 
-    if orientacion == 0:
-        # 0°: sin rotación
-        with reorient(x=Dimension.X, y=Dimension.Y, z=Dimension.Z):
-            plot_oriented()
-            return
-    elif orientacion == 1:
-        # 90° horario: X→Z, Z→-X
-        with reorient(x=Dimension.Z, y=Dimension.Y, z=Dimension.X):
-            plot_oriented()
-            return
-    elif orientacion == 2:
-        # 180°: X→-X, Z→-Z
-        with reorient(x=Dimension.X, y=Dimension.Y, z=Dimension.Z):
-            plot_oriented()
-            return
-    elif orientacion == 3:
-        # 270° horario (90° antihorario): X→-Z, Z→X
-        with reorient(x=Dimension.Z, y=Dimension.Y, z=Dimension.X):
-            plot_oriented()
-            return
+    with rotate(rotation_degrees):
+        plot_oriented()
 
 
 @rule
 def plot_oriented():
-    # TODO: aqui habria que rotar la parcela como corresponda
     if CURRENT_PLOT.uso == "lowDesRes":
-        with split(Dimension.Y, [6,-1]):
+        with split(Dimension.Y, [6, -1]):
             chaletPlot()
             void()
     elif CURRENT_PLOT.uso == "hiDesRes":
@@ -70,9 +54,9 @@ def plot_oriented():
 @rule
 def blockPlot():
     # Calcular cuántos pisos caben
-    available_height = CONTEXT[-1].get_value(Dimension.Y)//2
+    available_height = CONTEXT[-1].get_value(Dimension.Y) // 2
     floor_height = 5  # Misma altura que chalet
-    num_floors = randint(2,(available_height // floor_height))
+    num_floors = randint(2, (available_height // floor_height))
 
     if num_floors <= 1:
         chalet()
@@ -89,12 +73,6 @@ def blockPlot():
                 void()
 
 
-
-
-
-
-
-
 @rule(constraint=(Dimension.X < 9) & (Dimension.Z < 9))
 def chaletPlot():
     chalet()
@@ -103,30 +81,41 @@ def chaletPlot():
 @rule(constraint=(Dimension.X >= 9) | (Dimension.Z >= 9))
 def chaletPlot():
     plot_width = CONTEXT[-1].get_value(Dimension.X)
-    if plot_width <=8:
+    if plot_width <= 8:
         chalet()
     else:
-        chalet_width = randint(6, plot_width-2)
-        garden_width_left = randint(1, plot_width - chalet_width - 1)
-        garden_width_right = plot_width - chalet_width - garden_width_left
+        chalet_width = randint(6, max(6, plot_width - 2))  # Asegurar >= 6
+
+        # Asegurar que hay espacio para jardines
+        remaining_space = plot_width - chalet_width
+        if remaining_space < 2:  # No hay espacio para jardines a ambos lados
+            chalet()
+            return
+
+        garden_width_left = randint(1, remaining_space - 1)
+        garden_width_right = remaining_space - garden_width_left
+
         with split(Dimension.X, [garden_width_left, chalet_width, garden_width_right]):
             left_garden_side()
             garden_center()
             right_garden_side()
 
+
 @rule(constraint=(Dimension.X >= 2))
 def right_garden_side():
-    with split(Dimension.Z, [1,-1,1]):
+    with split(Dimension.Z, [1, -1, 1]):
         fence()
-        with split(Dimension.X, [-1,1]):
+        with split(Dimension.X, [-1, 1]):
             void()
             fence()
         fence()
+
+
 @rule(constraint=(Dimension.X >= 2))
 def left_garden_side():
-    with split(Dimension.Z, [1,-1,1]):
+    with split(Dimension.Z, [1, -1, 1]):
         fence()
-        with split(Dimension.X, [1,-1]):
+        with split(Dimension.X, [1, -1]):
             fence()
             void()
         fence()
@@ -136,20 +125,27 @@ def left_garden_side():
 def left_garden_side():
     fence()
 
+
 @rule(constraint=(Dimension.X == 1))
 def right_garden_side():
     fence()
+
 
 @rule
 def fence():
-    with split(Dimension.Y, [1,1,-1]):
+    with split(Dimension.Y, [1, 1, -1]):
         void()
         fill(FENCE_BLOCK)
         void()
 
+
 @rule
 def front_fence():
     width = CONTEXT[-1].get_value(Dimension.X)
+    if width < 3:
+        # No hay espacio para puerta, solo vallas
+        fill(FENCE_BLOCK)
+        return
     left_space_gate = randint(1, width - 2)
     right_space_gate = width - left_space_gate - 1
     with split(Dimension.Y, [1, 1, -1]):
@@ -160,6 +156,7 @@ def front_fence():
             fill(FENCE_BLOCK)
         void()
 
+
 @rule
 def garden_center():
     plot_depth = CONTEXT[-1].get_value(Dimension.Z)
@@ -167,35 +164,38 @@ def garden_center():
         chalet()  # Solo casa, sin jardines
     else:
         chalet_depth = randint(6, plot_depth - 2)
-        garden_depth_back = randint(0, plot_depth-chalet_depth-2) #dejar hueco para la puerta delantera del jardin
-        garden_depth_front = plot_depth-chalet_depth-garden_depth_back
+        garden_depth_back = randint(0, plot_depth - chalet_depth - 2)  # dejar hueco para la puerta delantera del jardin
+        garden_depth_front = plot_depth - chalet_depth - garden_depth_back
         with split(Dimension.Z, [garden_depth_back, chalet_depth, garden_depth_front]):
             garden_back()
             chalet()
             garden_front()
 
+
 @rule
 def garden_back():
-    with split(Dimension.Z, [1,-1]):
+    with split(Dimension.Z, [1, -1]):
         fence()
         void()
 
+
 @rule
 def garden_front():
-    with split(Dimension.Z, [CONTEXT[-1].get_value(Dimension.Z)-1,1]):
+    with split(Dimension.Z, [CONTEXT[-1].get_value(Dimension.Z) - 1, 1]):
         void()
         front_fence()
 
 
 @rule
 def chalet():
-    with split(Dimension.X, [-1,-1]):
-        with split(Dimension.Z, [-1,-1]):
-            corner(0,0)
-            corner(0,1)
-        with split(Dimension.Z, [-1,-1]):
-            corner(1,0)
-            corner(1,1)
+    # with split(Dimension.X, [-1, -1]):
+    #     with split(Dimension.Z, [-1, -1]):
+    #         corner(90)  # Noreste - 90°
+    #         corner(0)  # Noroeste - 0°
+    #     with split(Dimension.Z, [-1, -1]):
+    #         corner(180)  # Sureste - 180°
+    #         corner(270)  # Suroeste - 270°
+    room()
 
 
 @rule
@@ -207,7 +207,7 @@ def house():
     """
     with split(Dimension.Y, [6, 3, -1]):
         walls_and_interior()
-        #roof()
+        # roof()
         void()
 
 
@@ -227,110 +227,69 @@ def room():
     Cada cuarto construye sus paredes según su posición.
     """
     with split(Dimension.X, [-1, -1]):
-        with split(Dimension.Y, [-1, -1]):
-            corner(0, 0)  # Cuarto noroeste
-            corner(0, 1)  # Cuarto suroeste
         with split(Dimension.Z, [-1, -1]):
-            corner(1, 0)  # Cuarto noreste
-            corner(1, 1)  # Cuarto sureste
+            corner(0)  # Cuarto noreste - 90°
+            corner(270)  # Cuarto suroeste - 270°
+        with split(Dimension.Z, [-1, -1]):
+            corner(90)  # Cuarto sureste - 180°
+            corner(180)  # Cuarto noroeste - 0°
 
 
 @rule(probability=9)
-def corner(x, z):
+def corner(degrees):
     """
     Versión normal (90%): construye paredes exteriores (forma rectángulo)
     """
-    corner_normal(x, z)
+    corner_normal(degrees)
 
 
 @rule(probability=1, constraint=(Dimension.X > 4) & (Dimension.Z > 4))
-def corner(x, z):
+def corner(degrees):
     """
     Versión invertida (10%): construye paredes interiores (forma L)
     Solo si el cuarto es grande (>5 en X y Z)
     """
-    print("hoal")
-    corner_inverted(x, z)
+    print("corner invertido")
+    corner_inverted(degrees)
 
 
 @rule
-def corner_normal(x, z):
+def corner_normal(degrees):
     """
     Cuarto normal: construye paredes en sus bordes exteriores.
-
-    x=0: lado oeste, x=1: lado este
-    z=0: lado norte, z=1: lado sur
+    Usa rotación para simplificar: define solo la esquina noroeste (0°)
+    y rota según los grados recibidos.
     """
-    if x == 0 and z == 0:
-        # Noroeste: pared oeste + pared norte
+    # if degrees == 90:
+    #     fill(FENCE_BLOCK)
+    #     return
+
+    with rotate(degrees):
+        # Siempre construimos la esquina noroeste (pared oeste + pared norte)
         with split(Dimension.X, [1, -1]):
+            # fill(MAIN_BLOCK)
+            # fill(COLUMN_BLOCK)
             walls_only()
             with split(Dimension.Z, [1, -1]):
                 walls_only()
                 interior()
-
-    elif x == 0 and z == 1:
-        # Suroeste: pared oeste + pared sur
-        with split(Dimension.X, [1, -1]):
-            walls_only()
-            with split(Dimension.Z, [-1, 1]):
-                interior()
-                walls_only()
-
-    elif x == 1 and z == 0:
-        # Noreste: pared norte + pared este
-        with split(Dimension.X, [-1, 1]):
-            with split(Dimension.Z, [1, -1]):
-                walls_only()
-                interior()
-            walls_only()
-
-    elif x == 1 and z == 1:
-        # Sureste: pared sur + pared este
-        with split(Dimension.X, [-1, 1]):
-            with split(Dimension.Z, [-1, 1]):
-                interior()
-                walls_only()
-            walls_only()
 
 
 @rule
-def corner_inverted(x, z):
+def corner_inverted(degrees):
     """
     Cuarto invertido: construye paredes en la esquina opuesta.
-    Crea forma de L en lugar de esquina sólida.
+    Usa rotación para simplificar: define solo un caso base y rota.
     """
-    if x == 0 and z == 0:
-        # Noroeste invertido: paredes en esquina sureste
+    print(f"DEBUG corner_inverted: rotation={degrees}°")
+
+    with rotate(degrees):
+        # Caso base: noroeste invertido (paredes en esquina sureste)
         with split(Dimension.X, [-1, 1]):
             with split(Dimension.Z, [-1, 1]):
                 void()
                 walls_only()
             walls_only()
-
-    elif x == 0 and z == 1:
-        # Suroeste invertido: paredes en esquina noreste
-        with split(Dimension.X, [-1, 1]):
-            with split(Dimension.Z, [1, -1]):
-                walls_only()
-                void()
-            walls_only()
-
-    elif x == 1 and z == 0:
-        # Noreste invertido: paredes en esquina suroeste
-        with split(Dimension.X, [1, -1]):
-            walls_only()
-            with split(Dimension.Z, [-1, 1]):
-                void()
-                walls_only()
-
-    elif x == 1 and z == 1:
-        # Sureste invertido: paredes en esquina noroeste
-        with split(Dimension.X, [1, -1]):
-            walls_only()
-            with split(Dimension.Z, [1, -1]):
-                walls_only()
-                void()
 
 
 @rule
@@ -354,9 +313,10 @@ def walls_only():
         windows()
         fill(MAIN_BLOCK)
 
+
 @rule
 def windows():
-    L = CONTEXT[-1].get_value(Dimension.X)
+    L = CONTEXT[-1].get_value(Dimension.LARGEST)
 
     # Número total de tramos aleatorio (al menos 1)
     n_tramos = randint(1, max(1, L))
@@ -377,16 +337,13 @@ def windows():
     patron[-1] += sobrante
 
     # Aplicar patrón
-    with reorient(x=Dimension.LARGEST,y=Dimension.Y):
+    with reorient(x=Dimension.LARGEST, y=Dimension.Y):
         with split(Dimension.X, patron):
             for i, tramo in enumerate(patron):
                 if i % 2 == 0:
                     fill(MAIN_BLOCK)  # 'a'
                 else:
-                    fill(8)           # 'b'
-
-
-
+                    fill(8)  # 'b'
 
 
 # ==================================================

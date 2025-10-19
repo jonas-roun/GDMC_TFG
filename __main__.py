@@ -11,7 +11,7 @@ def construir_ciudad(numero_parcelas: int):
     poblacion, _ = generar_ciudad(10, 200)
     ciudad = poblacion[0]  # ahora sí es un GenomaCiudad (lista de parcelas)
     for i in range(len(ciudad)):
-        print("parcela: ", ciudad[i],"->", ciudad[i].validity())
+        print("parcela: ", ciudad[i],"->", 1/(1+abs(ciudad[i].funcion_adecuacion())))
         ciudad[i].level_plot()
         ciudad[i].construir()
         city.editor.flushBuffer()

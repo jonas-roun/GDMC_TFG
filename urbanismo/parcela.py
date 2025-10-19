@@ -69,9 +69,6 @@ class Parcela:
         return int(statistics.mean(recortadas))
 
 
-    def validity(self) -> int:
-        return self.blocks_in_water()*2500 + self.desnivel()*50
-
     def copy(self):
         parcela = Parcela()
         parcela.definir(self.alto, self.ancho, self.x, self.y, self.uso, self.floorplan)
@@ -91,11 +88,16 @@ class Parcela:
         get_constructor(self, self.uso).build(self)
 
 
-    def mutar_floorplan(self):
-        # mover puerta (exterior)
-        # mover casa dentro de parcela
-        # cambiar tamaño casa dentro de parcela
-        pass
+    def funcion_adecuacion(self) -> int:
+        UNEVEN_PENALTY = 1
+        WATER_PENALTY = 20
+        result = 0
+        if self.blocks_in_water() > self.alto * self.ancho * 0.8:
+            result += 1000000000  # EVITAR PARCELAS COMPLETAMENTE (O CASI) EN EL AGUA!!!!!
+        result += self.blocks_in_water() * WATER_PENALTY
+        result += self.desnivel() * UNEVEN_PENALTY
+        result+=abs(self.alto-self.ancho)/10
+        return result
 
     def level_plot(self):
         altura_parcela = self.altura_representativa()

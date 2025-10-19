@@ -72,7 +72,7 @@ def calculate_maps():
                 nx, ny = x + dx, y + dy
                 if 0 <= nx < height and 0 <= ny < width:
                     total_diff += abs(h - height_values[nx][ny])
-            inclination_values[x][y] = min(int(255 * (total_diff / max_grad)), 255)
+            inclination_values[x][y] = total_diff
 
     # d) Edificabilidad
     buildable_values = [[blocks_values[x][y] != "water" for y in range(width)] for x in range(height)]
@@ -91,15 +91,22 @@ def value_to_color(mode, x, y):
         norm = max(0, min(255, norm))
         return f'#{norm:02x}{norm:02x}{norm:02x}'
 
+
     elif mode == "inclination":
-        norm = inclination_values[x][y]
+
+        # Normalizamos aquí al convertir a color
+        global_min_incl = min(map(min, inclination_values))
+        global_max_incl = max(map(max, inclination_values))
+        incl = inclination_values[x][y]
+        norm = int(255 * (incl - global_min_incl) / max(1, global_max_incl - global_min_incl))
+        norm = max(0, min(255, norm))
         if norm <= 63:
             r, g, b = norm, 0, 0
         elif norm <= 128:
             r, g, b = 63, norm - 63, 0
         else:
             r, g, b = 63, 127, norm - 128
-        return f'#{r*4:02x}{g*2:02x}{b:02x}'
+        return f'#{r * 4:02x}{g * 2:02x}{b:02x}'
     elif mode == "buildable":
         return '#FFFFFF' if buildable_values[x][y] else '#000000'
     else:

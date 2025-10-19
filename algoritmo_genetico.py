@@ -52,21 +52,13 @@ def generar_poblacion(tamano: int) -> PoblacionMuestra:
     return [generar_genoma(numero_de_parcelas) for _ in range(tamano)]
 
 def funcion_adecuacion(ciudad: GenomaCiudad) -> float:
-    UNEVEN_PENALTY = 3
-    WATER_PENALTY = 40
     penalizaciones = 0
 
     for parcela in ciudad:
-        try:
-            if parcela.blocks_in_water() > parcela.alto * parcela.ancho*0.8:
-                penalizaciones += 1000000000            #EVITAR PARCELAS COMPLETAMENTE (O CASI) EN EL AGUA!!!!!
-            penalizaciones += parcela.blocks_in_water() * WATER_PENALTY
-            penalizaciones += parcela.desnivel() * UNEVEN_PENALTY
-            #penalizaciones+=abs(parcela.alto-parcela.ancho)*max(parcela.alto,parcela.ancho)+parcela.alto*parcela.ancho
-        except IndexError: return 0.000000001
+        penalizaciones += parcela.funcion_adecuacion()
 
     fitness = 1/(1+abs(penalizaciones))
-    return fitness*fitness
+    return fitness
 
 
 def seleccionar_pareja(generacion: PoblacionMuestra, fitness_func: FitnessFunc) -> PoblacionMuestra:
@@ -77,7 +69,7 @@ def seleccionar_pareja(generacion: PoblacionMuestra, fitness_func: FitnessFunc) 
     )
 
 def cruce_un_punto(a: GenomaCiudad, b: GenomaCiudad) -> Tuple[GenomaCiudad, GenomaCiudad]:
-    if(len(a) != len(b)):
+    if len(a) != len(b):
         raise ValueError("Las dos ciudades no tienen el mismo número de parcelas")
 
     length = len(a)
@@ -103,7 +95,7 @@ def cruce_un_punto(a: GenomaCiudad, b: GenomaCiudad) -> Tuple[GenomaCiudad, Geno
 def mutar_ciudad(ciudad: GenomaCiudad) -> GenomaCiudad:
     for i in range(len(ciudad)):
         #mutamos cada parcela aleatoriamente
-        if(uniform(0, 1) < 0.7):
+        if uniform(0, 1.5) > 1/(1 + abs(ciudad[i].funcion_adecuacion())):
             mutar_parcela(ciudad, i)
     return ciudad
 

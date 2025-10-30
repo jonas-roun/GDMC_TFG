@@ -623,6 +623,26 @@ def rule(probability=1, constraint=None):
     return rule_inner
 
 
+def debug_rule(func):
+    """Decorador para imprimir entrada y salida de cada regla."""
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        name = func.__name__
+        depth = len(CONTEXT)
+        print(f"{'  ' * depth}▶ ENTER {name} (depth={depth})")
+        try:
+            result = func(*args, **kwargs)
+            return result
+        finally:
+            depth_end = len(CONTEXT)
+            print(f"{'  ' * depth_end}◀ EXIT {name} (depth={depth_end})")
+
+    return wrapper
+
+
+
 def make_split(a, b, sizes, rounding_mode=Rounding.TRUNCATE, repeat=False):
     abssizes = 0
     relsizes = 0
@@ -634,29 +654,63 @@ def make_split(a, b, sizes, rounding_mode=Rounding.TRUNCATE, repeat=False):
     total = b - a
     relsizes = abs(relsizes)
     reltotal = total - abssizes
+
     if relsizes > 0:
-        relperunit = int(reltotal / relsizes)
+        relperunit = reltotal / relsizes  # Mantener como float
     else:
         relperunit = 0
 
     result = []
     current = a
     do_split = True
+
     while do_split:
         do_split = repeat
+        accumulated_sizes = []
+
+        # Primera pasada: calcular tamaños
         for s in sizes:
             if s > 0:
-                to = current + s
+                accumulated_sizes.append(s)
             else:
-                to = current + (-s) * relperunit
+                accumulated_sizes.append((-s) * relperunit)
+
+        # Calcular espacio perdido por redondeo
+        total_float = sum(accumulated_sizes)
+        total_int = sum(int(s) for s in accumulated_sizes)
+        remainder = int(total_float) - total_int
+
+        # Aplicar rounding_mode para distribuir el remainder
+        final_sizes = [int(s) for s in accumulated_sizes]
+
+        if remainder > 0:
+            if rounding_mode == Rounding.END:
+                # Dar todos los bloques extra al último elemento
+                final_sizes[-1] += remainder
+            elif rounding_mode == Rounding.START:
+                # Dar todos los bloques extra al primer elemento
+                final_sizes[0] += remainder
+            elif rounding_mode == Rounding.MIDDLE:
+                # Distribuir en el centro
+                middle_idx = len(final_sizes) // 2
+                final_sizes[middle_idx] += remainder
+            # TRUNCATE no hace nada, se pierden los bloques
+
+        # Generar los rangos
+        for size in final_sizes:
+            to = current + size
 
             if to > b:
                 print("Split", sizes, "exceeded size when splitting from", a, "to", b)
+                to = b
+
             if to >= b and repeat:
                 to = b
                 do_split = False
+
             result.append((current, to))
             current = to
+
     return result
 
 

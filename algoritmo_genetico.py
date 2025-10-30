@@ -95,7 +95,7 @@ def cruce_un_punto(a: GenomaCiudad, b: GenomaCiudad) -> Tuple[GenomaCiudad, Geno
 def mutar_ciudad(ciudad: GenomaCiudad) -> GenomaCiudad:
     for i in range(len(ciudad)):
         #mutamos cada parcela aleatoriamente
-        if uniform(0, 1.1) > 1/(1 + abs(ciudad[i].funcion_adecuacion())):
+        if uniform(0, 1.3) > 1/(1 + abs(ciudad[i].funcion_adecuacion())):
             mutar_parcela(ciudad, i)
     return ciudad
 
@@ -144,6 +144,7 @@ def mover_parcela(ciudad: GenomaCiudad, i:int):
         if is_in_range_move(ciudad[i], x_mov, y_mov) and validar_ciudad_move(ciudad, i, x_mov, y_mov):
             ciudad[i].x += x_mov
             ciudad[i].y += y_mov
+            #ciudad[i].place_gate()
             return
     print("No se ha podido mover la parcela")
 
@@ -175,10 +176,7 @@ def cambiar_tamano_parcela(ciudad: GenomaCiudad, i:int):
         if is_valid_resize(ciudad[i], x_mod, y_mod) and validar_ciudad_resize(ciudad, i, x_mod, y_mod):
             ciudad[i].ancho += x_mod
             ciudad[i].alto += y_mod
-            # if x_mod >= 0 and y_mod >= 0:
-            #     ciudad[i].floorplan = np.pad(ciudad[i].floorplan, ((0, y_mod), (0, x_mod)), mode='constant', constant_values=0)
-            # else:
-            #     ciudad[i].generate_floorplan() #si disminuye una dimension rehacer parcela para evitar cortes
+            #ciudad[i].place_gate()
             return
     print("No se ha podido cambiar el tamano")
 

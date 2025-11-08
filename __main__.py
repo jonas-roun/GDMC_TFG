@@ -1,6 +1,8 @@
 import tkinter as tk
+from typing import List
 
 import city_simulator as city
+from aco_steiner import MinecraftACOSteiner, Punto
 from algoritmo_genetico import generar_ciudad
 import algoritmo_genetico as ag
 from gdpc import  Block
@@ -10,12 +12,50 @@ def construir_ciudad(numero_parcelas: int):
     ag.numero_de_parcelas = numero_parcelas
     poblacion, _ = generar_ciudad(10, 200)
     ciudad = poblacion[0]  # ahora sí es un GenomaCiudad (lista de parcelas)
+    lista_puertas:List[Punto] = []
     for i in range(len(ciudad)):
         print("parcela: ", ciudad[i],"->", 1/(1+abs(ciudad[i].funcion_adecuacion())))
         ciudad[i].level_plot()
         ciudad[i].construir()
+        lista_puertas.append(Punto(ciudad[i].gate_coord()[0], ciudad[i].gate_coord()[1],ciudad[i].uso))
         city.editor.flushBuffer()
+    #
+    aco = MinecraftACOSteiner(
+        terminales=lista_puertas,
+        n_hormigas=30,
+        n_iteraciones=150,
+        alpha=1.0,
+        beta=2.0,
+        rho=0.1,
+        phi=0.01,
+        Q=100.0,
+        n_elite=3,
+        seed=42
+    )
 
+    # ============================================================
+    # Ejecutar optimización
+    # ============================================================
+
+    camino_topologia = aco.optimizar(verbose=True)
+
+    # Puedes obtener las coordenadas Manhattan del camino:
+    camino_bloques = aco.exportar_camino_lineas_rectas()
+
+    # ============================================================
+    # Colocar los bloques del camino en Minecraft
+    # ============================================================
+
+    for (x, z) in camino_bloques:
+        # Obtener altura del terreno en esa celda
+        y = city.heightmap[x, z]-1
+
+        # Colocar bloque (ejemplo: glowstone)
+        city.editor.placeBlock(
+            (x + city.buildArea.offset.x, y, z + city.buildArea.offset.z),
+            Block("glowstone")
+        )
+        city.editor.flushBuffer()
 
 def main():
     print("Ejecutando programa...")
@@ -32,7 +72,7 @@ def main():
     frame_controles = tk.Frame(root)
 
     tk.Button(frame_controles, text="Delinear zona de construcción",
-              command=lambda: (placeRectOutline(city.editor, city.buildArea.toRect(), 140, Block("red_concrete")), city.editor.flushBuffer())).pack(
+              command=lambda: (placeRectOutline(city.editor, city.buildArea.toRect(), 140, Block("spruce_leaves")), city.editor.flushBuffer())).pack(
         side="top", expand=True)
 
     refresh_icon = tk.PhotoImage(file="data/img/refresh.png")

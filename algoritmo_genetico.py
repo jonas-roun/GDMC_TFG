@@ -95,7 +95,7 @@ def cruce_un_punto(a: GenomaCiudad, b: GenomaCiudad) -> Tuple[GenomaCiudad, Geno
 def mutar_ciudad(ciudad: GenomaCiudad) -> GenomaCiudad:
     for i in range(len(ciudad)):
         #mutamos cada parcela aleatoriamente
-        if uniform(0, 1.3) > 1/(1 + abs(ciudad[i].funcion_adecuacion())):
+        if uniform(0, 1) > 1/(1 + abs(ciudad[i].funcion_adecuacion())):
             mutar_parcela(ciudad, i)
     return ciudad
 
@@ -103,7 +103,7 @@ def mutar_ciudad(ciudad: GenomaCiudad) -> GenomaCiudad:
 #   Aplica una mutación aleatoria a la parcela
 def mutar_parcela(ciudad:GenomaCiudad, i:int):
     modification = uniform(0,1)
-    if(modification < 0.7):
+    if(modification < 0.5):
         mover_parcela(ciudad, i)
     elif(modification <= 1):
         cambiar_tamano_parcela(ciudad, i)

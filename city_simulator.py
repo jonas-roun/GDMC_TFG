@@ -15,6 +15,7 @@ blocks_values = None
 height_values = None
 inclination_values = None
 buildable_values = None
+occupation_matrix = None
 
 canvas = None
 
@@ -23,7 +24,7 @@ canvas = None
 # Inicialización de mundo
 # ==============================
 def setup():
-    global editor, height, width, buildArea, heightmap, blocks_matrix
+    global editor, height, width, buildArea, heightmap, blocks_matrix, occupation_matrix
 
     editor = Editor(buffering=True)
     buildArea = editor.getBuildArea()
@@ -42,6 +43,7 @@ def setup():
             pos = vec3(buildArea.offset.x + x, heightmap[x][y] - 1, buildArea.offset.z + y)
             bloque = editor.getBlockGlobal(pos)
             blocks_matrix[x][y] = (pos, bloque)
+    occupation_matrix = [[True for _ in range(width)] for _ in range(height)]
 
 
 # ==============================
@@ -57,7 +59,6 @@ def calculate_maps():
 
     # c) Inclinación (gradiente)
     max_h, min_h = heightmap.max(), heightmap.min()
-    max_grad = max(1, 8 * (max_h - min_h)) / 2.5
     inclination_values = [[0 for _ in range(width)] for _ in range(height)]
 
     neighbors = [(-1, -1), (-1, 0), (-1, 1),
@@ -76,6 +77,7 @@ def calculate_maps():
 
     # d) Edificabilidad
     buildable_values = [[blocks_values[x][y] != "water" for y in range(width)] for x in range(height)]
+
 
 # ==============================
 # 3) Función de conversión a color

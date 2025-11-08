@@ -53,7 +53,7 @@ class Parcela:
         result = 0
         for i in range(self.ancho):
             for j in range(self.alto):
-                if not city.buildable_values[i+self.x][j+self.y]:
+                if city.blocks_values[i+self.x][j+self.y]=="water":
                     result+=1
         return result
 
@@ -85,13 +85,14 @@ class Parcela:
 
         # Colocar los bloques en el mundo
         for coord, block in blocks.items():
+            city.occupation_matrix[coord[0]][coord[2]] = False
             if isinstance(block[0], Block):
                 city.editor.placeBlock(
                     (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), block)
 
         coord = self.gate_coord()
-        city.editor.placeBlock(
-            (coord[0] + city.buildArea.offset.x, self.altura+3, coord[1] + city.buildArea.offset.z), Block("red_concrete"))
+        # city.editor.placeBlock(
+        #     (coord[0] + city.buildArea.offset.x, self.altura+3, coord[1] + city.buildArea.offset.z), Block("red_concrete"))
 
         # Confirmar cambios (importante si usamos buffering=True)
         city.editor.flushBuffer()
@@ -224,7 +225,7 @@ class Parcela:
             return None, None
 
 
-        return interior
+        return exterior
 
 
 

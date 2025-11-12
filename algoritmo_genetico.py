@@ -15,7 +15,7 @@ SelectionFunc = Callable[[PoblacionMuestra, FitnessFunc],Tuple[GenomaCiudad, Gen
 CrossoverFunc = Callable[[Tuple[GenomaCiudad, GenomaCiudad]], Tuple[GenomaCiudad, GenomaCiudad]]
 MutationFunc = Callable[[GenomaCiudad], GenomaCiudad]
 
-MAX_TRIES = 100
+MAX_TRIES = 50
 numero_de_parcelas = 0
 TAMANO_MINIMO_PARCELA = 6
 

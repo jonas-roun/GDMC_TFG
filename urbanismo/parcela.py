@@ -85,7 +85,7 @@ class Parcela:
 
         # Colocar los bloques en el mundo
         for coord, block in blocks.items():
-            city.occupation_matrix[coord[0]][coord[2]] = False
+            city.buildable_values[coord[0]][coord[2]] = False
             if isinstance(block[0], Block):
                 city.editor.placeBlock(
                     (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), block)

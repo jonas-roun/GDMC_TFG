@@ -21,16 +21,7 @@ def construir_ciudad(numero_parcelas: int):
         city.editor.flushBuffer()
     #
     aco = MinecraftACOSteiner(
-        terminales=lista_puertas,
-        n_hormigas=30,
-        n_iteraciones=150,
-        alpha=1.0,
-        beta=2.0,
-        rho=0.1,
-        phi=0.01,
-        Q=100.0,
-        n_elite=3,
-        seed=42
+        terminales=lista_puertas
     )
 
     # ============================================================

@@ -7,6 +7,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from urbanismo.parcela import Parcela
+import city_simulator as city
+
+# -------------------------
+# CONSTANTES DEL ALGORITMO ACO (según paper)
+# -------------------------
+N_HORMIGAS = 30  # Número de hormigas por iteración (paper: 20-50)
+N_ITERACIONES = 200  # Número de iteraciones (paper: 100-500)
+ALPHA = 1.0  # Importancia de feromonas (paper: α=1)
+BETA = 2.0  # Importancia de heurística de distancia (paper: β=2-5)
+RHO = 0.1  # Tasa de evaporación global (paper: ρ=0.1)
+PHI = 0.1  # Actualización local ACS-style (paper: φ=0.1)
+Q = 100.0  # Constante de depósito de feromonas
+N_ELITE = 3  # Número de soluciones elite que depositan feromonas
+SEED = 42  # Semilla para reproducibilidad (None para aleatorio)
 
 
 # -------------------------
@@ -71,32 +85,22 @@ class MinecraftACOSteiner:
     Rectilinear Steiner Tree Problem" (paper proporcionado)
     """
 
-    def __init__(self,
-                 terminales: List[Punto],
-                 n_hormigas: int = 30,
-                 n_iteraciones: int = 200,
-                 alpha: float = 1.0,
-                 beta: float = 2.0,
-                 rho: float = 0.1,  # evaporación global
-                 phi: float = 0.1,  # actualización local (paper usa 0.1)
-                 Q: float = 100.0,
-                 n_elite: int = 3,
-                 seed: int = None):
+    def __init__(self, terminales: List[Punto]):
 
-        if seed is not None:
-            random.seed(seed)
-            np.random.seed(seed)
+        if SEED is not None:
+            random.seed(SEED)
+            np.random.seed(SEED)
 
         self.terminales = terminales
         self.n_terminales = len(terminales)
-        self.n_hormigas = n_hormigas
-        self.n_iteraciones = n_iteraciones
-        self.alpha = alpha
-        self.beta = beta
-        self.rho = rho
-        self.phi = phi
+        self.n_hormigas = N_HORMIGAS
+        self.n_iteraciones = N_ITERACIONES
+        self.alpha = ALPHA
+        self.beta = BETA
+        self.rho = RHO
+        self.phi = PHI
         self.Q = Q
-        self.n_elite = n_elite
+        self.n_elite = N_ELITE
 
         # Generar red de Hanan
         self._crear_red_hanan()
@@ -120,6 +124,8 @@ class MinecraftACOSteiner:
         Paper Sección 2: Hanan grid
         Grid formado por líneas verticales y horizontales que pasan
         por cada terminal. Los nodos son las intersecciones.
+
+        MODIFICADO: Excluye puntos donde city.buildable_values[x][y] es False
         """
         xs = sorted(set(p.x for p in self.terminales))
         ys = sorted(set(p.y for p in self.terminales))
@@ -130,6 +136,15 @@ class MinecraftACOSteiner:
 
         for x in xs:
             for y in ys:
+                # Verificar si el punto está en zona ocupada
+                try:
+                    if not city.buildable_values[x][y]:
+                        # Saltar puntos en zona ocupada
+                        continue
+                except (IndexError, AttributeError):
+                    # Si hay error al acceder, incluir el punto por seguridad
+                    pass
+
                 es_terminal = any((t.x == x and t.y == y) for t in self.terminales)
                 nombre = ""
                 if es_terminal:
@@ -148,13 +163,18 @@ class MinecraftACOSteiner:
         # Índices de terminales
         self.terminal_idx = []
         for t in self.terminales:
-            self.terminal_idx.append(self.coord2idx[(t.x, t.y)])
+            if (t.x, t.y) in self.coord2idx:
+                self.terminal_idx.append(self.coord2idx[(t.x, t.y)])
+            else:
+                print(f"WARNING: Terminal {t.nombre} en ({t.x},{t.y}) no está en el grid Hanan")
 
     def _construir_aristas_completas(self):
         """
         Paper: Las hormigas pueden usar cualquier arista del Hanan grid.
         Para MST sobre terminales, necesitamos todas las posibles conexiones
         Manhattan entre terminales (y luego entre todos los nodos para expansión).
+
+        NOTA: Solo conecta nodos que están en coord2idx (ya filtrados por buildable_values)
         """
         self.edges: Dict[Tuple[int, int], float] = {}
         n = len(self.nodos)
@@ -527,8 +547,8 @@ class MinecraftACOSteiner:
             print("=" * 70)
             print(f"Terminales: {self.n_terminales}")
             print(f"Nodos Hanan grid: {len(self.nodos)}")
-            print(f"Hormigas: {self.n_hormigas} | Iteraciones: {self.n_iteraciones}")
-            print(f"Parámetros: α={self.alpha} β={self.beta} ρ={self.rho} φ={self.phi} Q={self.Q}")
+            print(f"Hormigas: {N_HORMIGAS} | Iteraciones: {N_ITERACIONES}")
+            print(f"Parámetros: α={ALPHA} β={BETA} ρ={RHO} φ={PHI} Q={Q}")
             print(f"τ₀ (inicial) = {self.tau0:.6f}")
             print("=" * 70)
 
@@ -606,7 +626,7 @@ class MinecraftACOSteiner:
                 paso = 1 if y2 > y1 else -1
                 for y in range(y1, y2 + paso, paso):
                     bloques.add((x2, y))
-
+        self.imprimir_resumen()
         return list(bloques)
 
     def imprimir_resumen(self):
@@ -704,6 +724,31 @@ class MinecraftACOSteiner:
 # -------------------------
 if __name__ == "__main__":
     from random import randint
+
+
+    # Mock del módulo city para pruebas
+    class MockBuildableValues:
+        def __init__(self):
+            self.size = 200
+            self.data = [[True for _ in range(self.size)] for _ in range(self.size)]
+            # Bloquear algunas zonas para testing
+            for x in range(30, 50):
+                for y in range(40, 60):
+                    self.data[x][y] = False
+            for x in range(80, 100):
+                for y in range(80, 100):
+                    self.data[x][y] = False
+
+        def __getitem__(self, x):
+            return self.data[x]
+
+        def __len__(self):
+            return self.size
+
+
+    # Solo para testing - crear buildable_values mock
+    if not hasattr(city, 'buildable_values'):
+        city.buildable_values = MockBuildableValues()
 
     # Generar terminales de ejemplo
     terminales = []

@@ -32,7 +32,7 @@ def generar_parcela() -> Parcela:
     result.x = randint(0, city.width-TAMANO_MINIMO_PARCELA)
     result.y = randint(0, city.height-TAMANO_MINIMO_PARCELA)
 
-    result.uso = "lowDesRes" if randint(0,1) == 0 else "hiDesRes"
+    result.uso = "lowDesRes" if randint(0,1) == 1    else "hiDesRes"
 
     # result.generate_floorplan()
     return result

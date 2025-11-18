@@ -17,6 +17,7 @@ COLUMN_BLOCK = 3
 FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
+LIGHT_BLOCK = 7
 
 CURRENT_PLOT: Parcela
 
@@ -35,7 +36,7 @@ def plot():
     """
     Rota la parcela aleatoriamente 0, 90, 180 o 270 grados
     """
-    orientacion = CURRENT_PLOT.orientation
+    orientacion = randint(0,3)#CURRENT_PLOT.orientation
     rotation_degrees = orientacion * 90  # 0, 90, 180, 270
 
     with rotate(rotation_degrees):
@@ -80,6 +81,7 @@ def get_room(parcela: Parcela):
     SplitGrammar.register_material(FENCE_BLOCK, parcela.fenceBlock)
     SplitGrammar.register_material(DOOR_BLOCK, parcela.door)
     SplitGrammar.register_material(GATE_BLOCK, [Block("oak_fence_gate")])
+    SplitGrammar.register_material(LIGHT_BLOCK, parcela.light)
     SplitGrammar.register_material(8, [Block("glass_pane")])
 
     from .GrammarBox import BoundingBox

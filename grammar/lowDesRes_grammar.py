@@ -64,7 +64,7 @@ def garden_back_strip():
             fence()
             with split(Dimension.X, [1,-1,1], rounding_mode=Rounding.MIDDLE):
                 fence()
-                void()
+                lawn()
                 fence()
 
 
@@ -77,7 +77,7 @@ def garden_front_strip():
     with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
         with split(Dimension.X, [1, -1, 1], rounding_mode=Rounding.MIDDLE):
             fence()
-            void()
+            lawn()
             fence()
         front_fence()
 
@@ -119,7 +119,7 @@ def garden_left_side():
     """
     with split(Dimension.X, [1, -1], rounding_mode=Rounding.END):
         fence()
-        void()
+        lawn()
 
 
 @rule(constraint=(Dimension.X >= 2))
@@ -129,7 +129,7 @@ def garden_right_side():
     Jardín lateral derecho
     """
     with split(Dimension.X, [-1, 1], rounding_mode=Rounding.START):
-        void()
+        lawn()
         fence()
 
 
@@ -223,3 +223,9 @@ def room():
         with split(Dimension.Z, [-1, -1], rounding_mode=Rounding.END):
             corner(90)
             corner(180)
+
+@rule
+@debug_rule
+def lawn():
+    with split(Dimension.Y, [1, -1], rounding_mode=Rounding.END):
+        fill(9)

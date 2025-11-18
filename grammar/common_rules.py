@@ -10,6 +10,7 @@ COLUMN_BLOCK = 3
 FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
+LIGHT_BLOCK = 7
 
 
 @rule(probability=9)
@@ -56,6 +57,18 @@ def interior():
         void()
         fill(COLUMN_BLOCK)
 
+@rule
+@debug_rule
+def lit_interior():
+    with split(Dimension.Y, [1, -1, 1], rounding_mode=Rounding.MIDDLE):
+        fill(FLOOR_BLOCK)
+        void()
+        with split(Dimension.Z, [-1, 1], rounding_mode=Rounding.END):
+            fill(COLUMN_BLOCK)
+            with split(Dimension.X, [-1, 1], rounding_mode=Rounding.END):
+                fill(COLUMN_BLOCK)
+                fill(LIGHT_BLOCK)
+
 
 @rule
 @debug_rule
@@ -88,3 +101,17 @@ def windows():
                     fill(MAIN_BLOCK)
                 else:
                     fill(8)
+
+
+@rule
+@debug_rule
+def wall_with_door():
+    with split(Dimension.Y, [1,2, -1], rounding_mode=Rounding.END):
+        fill(MAIN_BLOCK)
+        with split(Dimension.LARGEST, [-1, 1, -1], rounding_mode=Rounding.END):
+            fill(MAIN_BLOCK)
+            with split(Dimension.Y, [1,1]):
+                fill(DOOR_BLOCK)
+                void()
+            fill(MAIN_BLOCK)
+        fill(MAIN_BLOCK)

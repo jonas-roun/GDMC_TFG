@@ -36,6 +36,13 @@ block_black_list = coloured_blocks+wood_blocks
 
 floorBlocks = ["planks"]
 
+lighting_blocks = ["glowstone", "shroomlight", "sea_lantern", "waxed_copper_bulb"]
+
+flowers = [
+    "allium", "azure_bluet", "blue_orchid", "dandelion", "closed_eyeblossom", "open_eyeblossom", "lily_of_the_valley", "oxeye_daisy", "poppy",
+    "torchflower", "orange_tulip", "pink_tulip", "red_tulip", "white_tulip", "wither_rose", "lilac", "peony", "pitcher_plant", "rose_bush", "sunflower"
+]
+
 def manageBlockVariations(block: str) -> List[Block]:
     result = []
 
@@ -80,8 +87,18 @@ def getBlock(purpose: str, facing=None, hinge=None, half=None) -> List[Block]:
     elif purpose == "gate":
         return [Block(random.choice(woods)+"_fence_gate")]
     elif purpose == "door":
-        return [Block(random.choice(door_materials)+"door")]
-
+        return [Block(random.choice(door_materials)+"_door")]
+    elif purpose == "light":
+        block_name = random.choice(lighting_blocks)
+        if block_name == "waxed_copper_bulb":
+            block = [Block(block_name, {"lit":"true"})]
+        else:
+            block = [Block(block_name)]
+        return block
+    elif purpose == "flower":
+        if random.randint(0,10) == 1:
+            return [Block(random.choice(flowers))]
+        else: return [Block("air")]
     else:
         raise ValueError(f"Unknown purpose: {purpose}")
         

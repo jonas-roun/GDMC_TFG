@@ -7,7 +7,7 @@ from gdpc.geometry import placeCuboid
 import city_simulator as city
 import statistics
 
-
+from urbanismo import materials
 from urbanismo.materials import getBlock
 
 class Direction(IntEnum):
@@ -31,6 +31,7 @@ class Parcela:
         self.columnBlock = getBlock("column")
         self.fenceBlock = getBlock("fence")
         self.door=getBlock("door")
+        self.light=getBlock("light")
         self.orientation: Direction = None
         self.doorPosition=None
 
@@ -89,6 +90,9 @@ class Parcela:
             if isinstance(block[0], Block):
                 city.editor.placeBlock(
                     (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), block)
+            elif block[0]=="flower":
+                city.editor.placeBlock(
+                    (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), materials.getBlock("flower"))
 
         coord = self.gate_coord()
         # city.editor.placeBlock(
@@ -107,7 +111,7 @@ class Parcela:
         result += self.blocks_in_water() * WATER_PENALTY
         result += self.desnivel() * UNEVEN_PENALTY
         result+=abs(self.alto-self.ancho)/10
-        return result-self.alto*self.ancho
+        return result-self.alto*self.ancho/2
 
     def level_plot(self):
         altura_parcela = self.altura_representativa()

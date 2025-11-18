@@ -1,10 +1,9 @@
-# aco_steiner_paper_fiel.py
-import math
 import random
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Set
 import matplotlib.pyplot as plt
 import numpy as np
+from heapq import heappush, heappop
 
 from urbanismo.parcela import Parcela
 import city_simulator as city
@@ -21,6 +20,9 @@ PHI = 0.1  # Actualización local ACS-style (paper: φ=0.1)
 Q = 100.0  # Constante de depósito de feromonas
 N_ELITE = 3  # Número de soluciones elite que depositan feromonas
 SEED = 42  # Semilla para reproducibilidad (None para aleatorio)
+
+# NUEVAS CONSTANTES PARA DESNIVEL
+COSTE_ESCALON = 2.0  # Coste adicional por bloque de desnivel
 
 
 # -------------------------
@@ -67,6 +69,121 @@ class UnionFind:
 
 
 # -------------------------
+# FUNCIONES AUXILIARES PARA DESNIVEL Y A*
+# -------------------------
+def obtener_elevacion(x: int, y: int) -> int:
+    """Obtiene la elevación del terreno en las coordenadas (x, y)"""
+    try:
+        return city.height_values[x][y]
+    except (IndexError, AttributeError):
+        return 0
+
+
+def calcular_coste_con_desnivel(x1: int, y1: int, x2: int, y2: int) -> float:
+    """
+    Calcula el coste de moverse entre dos puntos considerando:
+    - Distancia Manhattan
+    - Desnivel acumulado en el camino
+
+    Para simplicidad, asume que el desnivel se distribuye uniformemente
+    en la distancia Manhattan entre los dos puntos.
+    """
+    dist_manhattan = abs(x2 - x1) + abs(y2 - y1)
+
+    if dist_manhattan == 0:
+        return 0.0
+
+    # Obtener elevaciones
+    elev1 = obtener_elevacion(x1, y1)
+    elev2 = obtener_elevacion(x2, y2)
+
+    # Desnivel total
+    desnivel_total = abs(elev2 - elev1)
+
+    # Coste = distancia + (desnivel * factor)
+    coste = dist_manhattan + (desnivel_total * COSTE_ESCALON)
+
+    return coste
+
+
+def a_star_path(start_x: int, start_y: int, end_x: int, end_y: int) -> Tuple[List[Tuple[int, int]], float]:
+    """
+    Encuentra el camino óptimo entre dos puntos usando A*,
+    evitando zonas ocupadas y considerando el desnivel del terreno.
+
+    Returns:
+        (camino, coste): Lista de coordenadas (x,y) y coste total del camino
+    """
+    # Verificar que inicio y fin son válidos
+    try:
+        if not city.buildable_values[start_x][start_y] or not city.buildable_values[end_x][end_y]:
+            return [], float('inf')
+    except (IndexError, AttributeError):
+        return [], float('inf')
+
+    # Estructuras para A*
+    open_set = []
+    heappush(open_set, (0, start_x, start_y))
+
+    came_from = {}
+    g_score = {(start_x, start_y): 0}
+
+    # Heurística: distancia Manhattan
+    def heuristic(x, y):
+        return abs(x - end_x) + abs(y - end_y)
+
+    f_score = {(start_x, start_y): heuristic(start_x, start_y)}
+
+    while open_set:
+        _, current_x, current_y = heappop(open_set)
+
+        # ¿Llegamos al destino?
+        if current_x == end_x and current_y == end_y:
+            # Reconstruir camino
+            path = []
+            x, y = current_x, current_y
+            while (x, y) in came_from:
+                path.append((x, y))
+                x, y = came_from[(x, y)]
+            path.append((start_x, start_y))
+            path.reverse()
+
+            return path, g_score[(end_x, end_y)]
+
+        # Explorar vecinos (4-conectividad: arriba, abajo, izq, der)
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            neighbor_x = current_x + dx
+            neighbor_y = current_y + dy
+
+            # Verificar límites y disponibilidad
+            try:
+                if not city.buildable_values[neighbor_x][neighbor_y]:
+                    continue
+            except (IndexError, AttributeError):
+                continue
+
+            # Calcular coste considerando desnivel
+            elev_current = obtener_elevacion(current_x, current_y)
+            elev_neighbor = obtener_elevacion(neighbor_x, neighbor_y)
+
+            # Coste del movimiento = 1 (distancia) + desnivel
+            desnivel = abs(elev_neighbor - elev_current)
+            move_cost = 1.0 + (desnivel * COSTE_ESCALON)
+
+            tentative_g = g_score[(current_x, current_y)] + move_cost
+
+            if (neighbor_x, neighbor_y) not in g_score or tentative_g < g_score[(neighbor_x, neighbor_y)]:
+                came_from[(neighbor_x, neighbor_y)] = (current_x, current_y)
+                g_score[(neighbor_x, neighbor_y)] = tentative_g
+                f = tentative_g + heuristic(neighbor_x, neighbor_y)
+                f_score[(neighbor_x, neighbor_y)] = f
+                heappush(open_set, (f, neighbor_x, neighbor_y))
+
+    # No se encontró camino
+    return [], float('inf')
+
+
+# -------------------------
 # ACO para RSTP (FIEL AL PAPER)
 # -------------------------
 class MinecraftACOSteiner:
@@ -80,6 +197,10 @@ class MinecraftACOSteiner:
     4. Local pheromone update (ACS-style) during construction
     5. Global pheromone update with elite strategy
     6. Pruning of degree-1 Steiner nodes
+
+    MODIFICACIONES:
+    - Coste entre nodos considera desnivel del terreno
+    - Conexiones usan A* para evitar zonas ocupadas
 
     Referencia: "An Ant Colony Optimization Algorithm for the
     Rectilinear Steiner Tree Problem" (paper proporcionado)
@@ -102,10 +223,13 @@ class MinecraftACOSteiner:
         self.Q = Q
         self.n_elite = N_ELITE
 
+        # Cache de caminos A* para exportación (ANTES de construir aristas)
+        self.caminos_cache: Dict[Tuple[int, int], List[Tuple[int, int]]] = {}
+
         # Generar red de Hanan
         self._crear_red_hanan()
 
-        # Construir TODAS las aristas Manhattan entre nodos
+        # Construir TODAS las aristas Manhattan entre nodos (con A* y desnivel)
         self._construir_aristas_completas()
 
         # Inicializar feromonas
@@ -171,15 +295,17 @@ class MinecraftACOSteiner:
     def _construir_aristas_completas(self):
         """
         Paper: Las hormigas pueden usar cualquier arista del Hanan grid.
-        Para MST sobre terminales, necesitamos todas las posibles conexiones
-        Manhattan entre terminales (y luego entre todos los nodos para expansión).
 
-        NOTA: Solo conecta nodos que están en coord2idx (ya filtrados por buildable_values)
+        MODIFICADO: Usa A* para calcular coste real entre nodos,
+        considerando zonas ocupadas y desnivel del terreno.
         """
         self.edges: Dict[Tuple[int, int], float] = {}
         n = len(self.nodos)
 
+        print("Calculando aristas con A* y desnivel...")
+
         # Crear aristas solo entre nodos en misma fila o columna (Manhattan)
+        aristas_calculadas = 0
         for i in range(n):
             for j in range(i + 1, n):
                 p1 = self.nodos[i]
@@ -187,9 +313,18 @@ class MinecraftACOSteiner:
 
                 # Solo conexiones Manhattan (misma x o misma y)
                 if p1.x == p2.x or p1.y == p2.y:
-                    dist = abs(p1.x - p2.x) + abs(p1.y - p2.y)
-                    self.edges[(i, j)] = dist
-                    self.edges[(j, i)] = dist
+                    # Usar A* para encontrar camino real
+                    camino, coste = a_star_path(p1.x, p1.y, p2.x, p2.y)
+
+                    if camino and coste < float('inf'):
+                        self.edges[(i, j)] = coste
+                        self.edges[(j, i)] = coste
+                        # Guardar camino para usar después
+                        self.caminos_cache[(i, j)] = camino
+                        self.caminos_cache[(j, i)] = camino[::-1]
+                        aristas_calculadas += 1
+
+        print(f"Aristas calculadas: {aristas_calculadas}")
 
     def _inicializar_feromonas(self):
         """
@@ -292,7 +427,6 @@ class MinecraftACOSteiner:
                         continue
 
                     # Buscar mejor camino Manhattan entre u y t_idx
-                    # (puede pasar por nodos Steiner intermedios)
                     camino, dist = self._mejor_camino_manhattan(u, t_idx)
 
                     if camino:
@@ -543,12 +677,13 @@ class MinecraftACOSteiner:
         """
         if verbose:
             print("=" * 70)
-            print(" ACO-RSTP FIEL AL PAPER")
+            print(" ACO-RSTP CON DESNIVEL Y A*")
             print("=" * 70)
             print(f"Terminales: {self.n_terminales}")
             print(f"Nodos Hanan grid: {len(self.nodos)}")
             print(f"Hormigas: {N_HORMIGAS} | Iteraciones: {N_ITERACIONES}")
             print(f"Parámetros: α={ALPHA} β={BETA} ρ={RHO} φ={PHI} Q={Q}")
+            print(f"Coste escalón: {COSTE_ESCALON}")
             print(f"τ₀ (inicial) = {self.tau0:.6f}")
             print("=" * 70)
 
@@ -581,7 +716,7 @@ class MinecraftACOSteiner:
         if verbose:
             print("\n" + "=" * 70)
             print("OPTIMIZACIÓN COMPLETADA")
-            print(f"Mejor coste Manhattan: {self.mejor_coste:.2f}")
+            print(f"Mejor coste (con desnivel): {self.mejor_coste:.2f}")
             print("=" * 70 + "\n")
 
         return self.mejor_solucion
@@ -605,27 +740,30 @@ class MinecraftACOSteiner:
     def exportar_camino_lineas_rectas(self):
         """
         Exporta todos los bloques que forman el camino (para Minecraft)
+        MODIFICADO: Usa los caminos A* reales en lugar de líneas rectas
         """
         if not self.mejor_solucion:
             return []
 
         bloques = set()
+
         for u, v in self.mejor_solucion:
-            p1 = self.nodos[u]
-            p2 = self.nodos[v]
-            x1, y1 = p1.x, p1.y
-            x2, y2 = p2.x, p2.y
+            # Obtener camino A* desde la cache
+            arista_key = (u, v)
 
-            # Generar bloques del segmento Manhattan
-            if x1 != x2:
-                paso = 1 if x2 > x1 else -1
-                for x in range(x1, x2 + paso, paso):
-                    bloques.add((x, y1))
+            if arista_key in self.caminos_cache:
+                camino = self.caminos_cache[arista_key]
+                # Añadir todos los bloques del camino
+                for x, y in camino:
+                    bloques.add((x, y))
+            else:
+                # Fallback: si no está en cache, calcular ahora
+                p1 = self.nodos[u]
+                p2 = self.nodos[v]
+                camino, _ = a_star_path(p1.x, p1.y, p2.x, p2.y)
+                for x, y in camino:
+                    bloques.add((x, y))
 
-            if y1 != y2:
-                paso = 1 if y2 > y1 else -1
-                for y in range(y1, y2 + paso, paso):
-                    bloques.add((x2, y))
         self.imprimir_resumen()
         return list(bloques)
 
@@ -639,7 +777,7 @@ class MinecraftACOSteiner:
             print("No se encontró solución válida.")
             return
 
-        print(f"Coste total (Manhattan): {self.mejor_coste:.2f}")
+        print(f"Coste total (con desnivel): {self.mejor_coste:.2f}")
         print(f"Aristas en árbol: {len(self.mejor_solucion)}")
 
         nodos_usados = set()
@@ -655,9 +793,24 @@ class MinecraftACOSteiner:
         for p1, p2 in self.obtener_topologia():
             tipo1 = "T" if p1.es_terminal else "S"
             tipo2 = "T" if p2.es_terminal else "S"
-            dist = abs(p1.x - p2.x) + abs(p1.y - p2.y)
-            print(f"  [{tipo1}] {p1.nombre:8s} ({p1.x:3d},{p1.y:3d})  <->  "
-                  f"[{tipo2}] {p2.nombre:8s} ({p2.x:3d},{p2.y:3d})  [dist={dist:.1f}]")
+
+            # Obtener coste real (con desnivel)
+            u = self.coord2idx.get((p1.x, p1.y))
+            v = self.coord2idx.get((p2.x, p2.y))
+
+            if u is not None and v is not None:
+                coste = self.edges.get((u, v), 0)
+                elev1 = obtener_elevacion(p1.x, p1.y)
+                elev2 = obtener_elevacion(p2.x, p2.y)
+                desnivel = abs(elev2 - elev1)
+
+                print(f"  [{tipo1}] {p1.nombre:8s} ({p1.x:3d},{p1.y:3d},z={elev1:.1f})  <->  "
+                      f"[{tipo2}] {p2.nombre:8s} ({p2.x:3d},{p2.y:3d},z={elev2:.1f})  "
+                      f"[coste={coste:.1f}, Δz={desnivel:.1f}]")
+            else:
+                dist = abs(p1.x - p2.x) + abs(p1.y - p2.y)
+                print(f"  [{tipo1}] {p1.nombre:8s} ({p1.x:3d},{p1.y:3d})  <->  "
+                      f"[{tipo2}] {p2.nombre:8s} ({p2.x:3d},{p2.y:3d})  [dist={dist:.1f}]")
 
         print("=" * 60 + "\n")
 
@@ -678,11 +831,18 @@ class MinecraftACOSteiner:
         ax1.scatter(xs_grid, ys_grid, s=15, color="lightgray", alpha=0.5, label="Hanan grid", zorder=1)
 
         if self.mejor_solucion:
-            # Dibujar aristas de la solución
+            # Dibujar aristas de la solución (usando caminos A*)
             for u, v in self.mejor_solucion:
-                p1 = self.nodos[u]
-                p2 = self.nodos[v]
-                ax1.plot([p1.x, p2.x], [p1.y, p2.y], 'b-', linewidth=2, alpha=0.7, zorder=2)
+                if (u, v) in self.caminos_cache:
+                    camino = self.caminos_cache[(u, v)]
+                    xs = [coord[0] for coord in camino]
+                    ys = [coord[1] for coord in camino]
+                    ax1.plot(xs, ys, 'b-', linewidth=2, alpha=0.7, zorder=2)
+                else:
+                    # Fallback a línea directa si no hay camino
+                    p1 = self.nodos[u]
+                    p2 = self.nodos[v]
+                    ax1.plot([p1.x, p2.x], [p1.y, p2.y], 'b-', linewidth=2, alpha=0.7, zorder=2)
 
             # Identificar nodos usados
             nodos_usados = set()
@@ -746,36 +906,57 @@ if __name__ == "__main__":
             return self.size
 
 
-    # Solo para testing - crear buildable_values mock
+    class MockElevationValues:
+        def __init__(self):
+            self.size = 200
+            # Crear terreno con algo de desnivel
+            self.data = [[0 for _ in range(self.size)] for _ in range(self.size)]
+
+            # Crear algunas colinas y valles
+            for x in range(self.size):
+                for y in range(self.size):
+                    # Patrón de ondulación
+                    self.data[x][y] = int(5 * np.sin(x / 20) + 5 * np.cos(y / 20) + 10)
+
+            # Añadir una montaña
+            for x in range(60, 90):
+                for y in range(60, 90):
+                    dist_centro = np.sqrt((x - 75) ** 2 + (y - 75) ** 2)
+                    if dist_centro < 15:
+                        self.data[x][y] += int(20 * (1 - dist_centro / 15))
+
+        def __getitem__(self, x):
+            return self.data[x]
+
+        def __len__(self):
+            return self.size
+
+
+    # Solo para testing - crear mocks
     if not hasattr(city, 'buildable_values'):
         city.buildable_values = MockBuildableValues()
+    if not hasattr(city, 'elevation_values'):
+        city.elevation_values = MockElevationValues()
 
     # Generar terminales de ejemplo
     terminales = []
-    for i in range(20):
-        x = randint(0, 150)
-        y = randint(0, 150)
+    for i in range(8):
+        x = randint(10, 150)
+        y = randint(10, 150)
         terminales.append(Punto(x, y, nombre=f"T{i}"))
 
     # Crear instancia ACO con parámetros del paper
-    aco = MinecraftACOSteiner(
-        terminales=terminales,
-        n_hormigas=30,  # Paper usa 20-50
-        n_iteraciones=100,  # Paper usa 100-500
-        alpha=1.0,  # Paper: α=1
-        beta=2.0,  # Paper: β=2-5
-        rho=0.1,  # Paper: ρ=0.1
-        phi=0.1,  # Paper: φ=0.1 (ACS)
-        Q=100.0,  # Paper: Q ajustable
-        n_elite=3,  # Elite strategy
-        seed=42  # Reproducibilidad
-    )
+    aco = MinecraftACOSteiner(terminales=terminales)
 
     # Optimizar
     mejor = aco.optimizar(verbose=True)
 
     # Mostrar resultados
     aco.imprimir_resumen()
+
+    # Exportar bloques del camino
+    bloques = aco.exportar_camino_lineas_rectas()
+    print(f"\nTotal de bloques en el camino: {len(bloques)}")
 
     # Visualizar
     aco.visualizar()

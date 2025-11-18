@@ -227,5 +227,7 @@ def room():
 @rule
 @debug_rule
 def lawn():
+    void()
+    return
     with split(Dimension.Y, [1, -1], rounding_mode=Rounding.END):
         fill(9)

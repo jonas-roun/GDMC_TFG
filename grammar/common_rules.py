@@ -105,10 +105,10 @@ def windows():
 
 @rule
 @debug_rule
-def wall_with_door():
+def wall_with_door(door_offset=-1):
     with split(Dimension.Y, [1,2, -1], rounding_mode=Rounding.END):
         fill(MAIN_BLOCK)
-        with split(Dimension.LARGEST, [-1, 1, -1], rounding_mode=Rounding.END):
+        with split(Dimension.LARGEST, [door_offset, 1, -1], rounding_mode=Rounding.END):
             fill(MAIN_BLOCK)
             with split(Dimension.Y, [1,1]):
                 fill(DOOR_BLOCK)

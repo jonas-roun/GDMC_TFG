@@ -36,7 +36,7 @@ def plot():
     """
     Rota la parcela aleatoriamente 0, 90, 180 o 270 grados
     """
-    orientacion = CURRENT_PLOT.orientation
+    orientacion = (CURRENT_PLOT.orientation)%4
     rotation_degrees = orientacion * 90  # 0, 90, 180, 270
 
     with rotate(rotation_degrees):

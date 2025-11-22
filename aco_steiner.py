@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from heapq import heappush, heappop
 
+from gdpc import Block
+
 from urbanismo.parcela import Parcela
 import city_simulator as city
 
@@ -22,7 +24,7 @@ N_ELITE = 3  # Número de soluciones elite que depositan feromonas
 SEED = 42  # Semilla para reproducibilidad (None para aleatorio)
 
 # NUEVAS CONSTANTES PARA DESNIVEL
-COSTE_ESCALON = 2.0  # Coste adicional por bloque de desnivel
+COSTE_ESCALON = 4.0  # Coste adicional por bloque de desnivel
 
 
 # -------------------------
@@ -108,79 +110,86 @@ def calcular_coste_con_desnivel(x1: int, y1: int, x2: int, y2: int) -> float:
 
 def a_star_path(start_x: int, start_y: int, end_x: int, end_y: int) -> Tuple[List[Tuple[int, int]], float]:
     """
-    Encuentra el camino óptimo entre dos puntos usando A*,
-    evitando zonas ocupadas y considerando el desnivel del terreno.
-
-    Returns:
-        (camino, coste): Lista de coordenadas (x,y) y coste total del camino
+    A* para camino de ancho=2 real.
+    Cada paso ocupa dos bloques: el central + un bloque lateral consistente.
     """
-    # Verificar que inicio y fin son válidos
     try:
         if not city.buildable_values[start_x][start_y] or not city.buildable_values[end_x][end_y]:
             return [], float('inf')
     except (IndexError, AttributeError):
         return [], float('inf')
 
-    # Estructuras para A*
     open_set = []
     heappush(open_set, (0, start_x, start_y))
-
     came_from = {}
     g_score = {(start_x, start_y): 0}
 
-    # Heurística: distancia Manhattan
     def heuristic(x, y):
         return abs(x - end_x) + abs(y - end_y)
 
     f_score = {(start_x, start_y): heuristic(start_x, start_y)}
 
+    # Guardar bloques ocupados
+    bloques_cache = {(start_x, start_y): {(start_x, start_y)}}
+
     while open_set:
         _, current_x, current_y = heappop(open_set)
 
-        # ¿Llegamos al destino?
         if current_x == end_x and current_y == end_y:
-            # Reconstruir camino
-            path = []
+            path_blocks = []
             x, y = current_x, current_y
             while (x, y) in came_from:
-                path.append((x, y))
+                path_blocks.extend(list(bloques_cache[(x, y)]))
                 x, y = came_from[(x, y)]
-            path.append((start_x, start_y))
-            path.reverse()
+            path_blocks.extend(list(bloques_cache[(start_x, start_y)]))
+            path_blocks = list(set(path_blocks))
+            return path_blocks, g_score[(end_x, end_y)]
 
-            return path, g_score[(end_x, end_y)]
+        for dx, dy in [(0,1), (0,-1), (1,0), (-1,0)]:
+            nx, ny = current_x + dx, current_y + dy
 
-        # Explorar vecinos (4-conectividad: arriba, abajo, izq, der)
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            neighbor_x = current_x + dx
-            neighbor_y = current_y + dy
+            # Bloque lateral único para ancho=2
+            lateral_blocks = []
+            if dx != 0:  # horizontal
+                lateral_blocks = [(nx, ny + 1)]  # solo arriba
+            elif dy != 0:  # vertical
+                lateral_blocks = [(nx + 1, ny)]  # solo derecha
 
-            # Verificar límites y disponibilidad
+            # Verificar que todos los bloques sean buildable
+            bloques_validos = True
             try:
-                if not city.buildable_values[neighbor_x][neighbor_y]:
+                if not city.buildable_values[nx][ny]:
+                    continue
+                for lx, ly in lateral_blocks:
+                    if lx < 0 or ly < 0:
+                        bloques_validos = False
+                        break
+                    if not city.buildable_values[lx][ly]:
+                        bloques_validos = False
+                        break
+                if not bloques_validos:
                     continue
             except (IndexError, AttributeError):
                 continue
 
-            # Calcular coste considerando desnivel
             elev_current = obtener_elevacion(current_x, current_y)
-            elev_neighbor = obtener_elevacion(neighbor_x, neighbor_y)
-
-            # Coste del movimiento = 1 (distancia) + desnivel
+            elev_neighbor = obtener_elevacion(nx, ny)
             desnivel = abs(elev_neighbor - elev_current)
             move_cost = 1.0 + (desnivel * COSTE_ESCALON)
 
             tentative_g = g_score[(current_x, current_y)] + move_cost
 
-            if (neighbor_x, neighbor_y) not in g_score or tentative_g < g_score[(neighbor_x, neighbor_y)]:
-                came_from[(neighbor_x, neighbor_y)] = (current_x, current_y)
-                g_score[(neighbor_x, neighbor_y)] = tentative_g
-                f = tentative_g + heuristic(neighbor_x, neighbor_y)
-                f_score[(neighbor_x, neighbor_y)] = f
-                heappush(open_set, (f, neighbor_x, neighbor_y))
+            if (nx, ny) not in g_score or tentative_g < g_score[(nx, ny)]:
+                came_from[(nx, ny)] = (current_x, current_y)
+                g_score[(nx, ny)] = tentative_g
+                f_score[(nx, ny)] = tentative_g + heuristic(nx, ny)
+                heappush(open_set, (f_score[(nx, ny)], nx, ny))
+                bloques_cache[(nx, ny)] = {(nx, ny)} | set(lateral_blocks)
 
-    # No se encontró camino
     return [], float('inf')
+
+
+
 
 
 # -------------------------
@@ -811,7 +820,7 @@ class MinecraftACOSteiner:
                 dist = abs(p1.x - p2.x) + abs(p1.y - p2.y)
                 print(f"  [{tipo1}] {p1.nombre:8s} ({p1.x:3d},{p1.y:3d})  <->  "
                       f"[{tipo2}] {p2.nombre:8s} ({p2.x:3d},{p2.y:3d})  [dist={dist:.1f}]")
-
+        self.visualizar()
         print("=" * 60 + "\n")
 
     def visualizar(self):
@@ -878,85 +887,91 @@ class MinecraftACOSteiner:
         plt.tight_layout()
         plt.show()
 
+    def construir_camino_en_minecraft(self, bloques_camino):
+        """
+        Construye directamente el camino en Minecraft.
+        bloques_camino: lista de (x,z) que forman el camino final.
+        """
+        print(f"[ACO] Construyendo camino en Minecraft ({len(bloques_camino)} bloques)...")
 
-# -------------------------
-# EJEMPLO DE USO
-# -------------------------
-if __name__ == "__main__":
-    from random import randint
+        for (x, z) in bloques_camino:
+            try:
+                # Altura del terreno
+                y = city.heightmap[x, z] - 1
 
+                # Convertir a coordenadas del mundo real
+                world_x = x + city.buildArea.offset.x
+                world_z = z + city.buildArea.offset.z
 
-    # Mock del módulo city para pruebas
-    class MockBuildableValues:
-        def __init__(self):
-            self.size = 200
-            self.data = [[True for _ in range(self.size)] for _ in range(self.size)]
-            # Bloquear algunas zonas para testing
-            for x in range(30, 50):
-                for y in range(40, 60):
-                    self.data[x][y] = False
-            for x in range(80, 100):
-                for y in range(80, 100):
-                    self.data[x][y] = False
+                # Colocar bloques del camino
+                city.editor.placeBlock(
+                    (world_x, y, world_z),
+                    [Block("dirt_path"), Block("mud_bricks")]
+                )
 
-        def __getitem__(self, x):
-            return self.data[x]
+            except Exception as e:
+                print(f"[WARN] No se pudo colocar bloque en {(x, z)}: {e}")
 
-        def __len__(self):
-            return self.size
+        city.editor.flushBuffer()
+        print("[ACO] Camino construido correctamente.")
 
+    def ejecutar_y_construir(self, verbose=True):
+        """
+        Ejecuta la optimización, construye el camino
+        y añade decoración lateral.
+        """
+        # 1. Ejecutar ACO
+        self.optimizar(verbose=verbose)
 
-    class MockElevationValues:
-        def __init__(self):
-            self.size = 200
-            # Crear terreno con algo de desnivel
-            self.data = [[0 for _ in range(self.size)] for _ in range(self.size)]
+        # 2. Exportar todos los bloques del camino
+        bloques_camino = self.exportar_camino_lineas_rectas()
 
-            # Crear algunas colinas y valles
-            for x in range(self.size):
-                for y in range(self.size):
-                    # Patrón de ondulación
-                    self.data[x][y] = int(5 * np.sin(x / 20) + 5 * np.cos(y / 20) + 10)
+        # 3. Construir el camino real
+        self.construir_camino_en_minecraft(bloques_camino)
 
-            # Añadir una montaña
-            for x in range(60, 90):
-                for y in range(60, 90):
-                    dist_centro = np.sqrt((x - 75) ** 2 + (y - 75) ** 2)
-                    if dist_centro < 15:
-                        self.data[x][y] += int(20 * (1 - dist_centro / 15))
+        # 4. Postprocesado: añadir elementos laterales
+        self.postprocesar_decoracion_lateral(bloques_camino, cada=15)
 
-        def __getitem__(self, x):
-            return self.data[x]
+        return bloques_camino
 
-        def __len__(self):
-            return self.size
+    def postprocesar_decoracion_lateral(self, bloques_camino, cada=10):
+        laterales = bloques_laterales(bloques_camino)
+        colocar_decoracion(laterales, cada=cada)
 
 
-    # Solo para testing - crear mocks
-    if not hasattr(city, 'buildable_values'):
-        city.buildable_values = MockBuildableValues()
-    if not hasattr(city, 'elevation_values'):
-        city.elevation_values = MockElevationValues()
+def bloques_laterales(camino: List[Tuple[int,int]]) -> Set[Tuple[int,int]]:
+    camino_set = set(camino)  # Convertimos a set para búsqueda rápida
+    laterales = set()
+    for x, z in camino:
+        for dx, dz in [(-1,0), (1,0), (0,-1), (0,1)]:
+            nx, nz = x + dx, z + dz
+            if nx < 0 or nz < 0:
+                continue
+            if (nx, nz) in camino_set:  # Excluir bloques del camino
+                continue
+            try:
+                if city.buildable_values[nx][nz]:  # Solo buildable
+                    laterales.add((nx, nz))
+            except Exception:
+                continue
+    return laterales
 
-    # Generar terminales de ejemplo
-    terminales = []
-    for i in range(8):
-        x = randint(10, 150)
-        y = randint(10, 150)
-        terminales.append(Punto(x, y, nombre=f"T{i}"))
+def colocar_decoracion(laterales: Set[Tuple[int,int]], cada: int = 25):
+    bloques_usados = []
 
-    # Crear instancia ACO con parámetros del paper
-    aco = MinecraftACOSteiner(terminales=terminales)
+    laterales = list(laterales)  # convertir a lista
+    random.shuffle(laterales)    # opcional, para que no sea siempre en el mismo lado
 
-    # Optimizar
-    mejor = aco.optimizar(verbose=True)
+    for x, z in laterales:
+        # Comprobar distancia a bloques ya colocados
+        if all(abs(x - bx) + abs(z - bz) >= cada for bx, bz in bloques_usados):
+            try:
+                y = city.heightmap[x, z] - 1
+                wx = x + city.buildArea.offset.x
+                wz = z + city.buildArea.offset.z
+                city.editor.placeBlock((wx, y + 1, wz), [Block("diamond_block")])
+                bloques_usados.append((x, z))
+            except Exception:
+                continue
 
-    # Mostrar resultados
-    aco.imprimir_resumen()
-
-    # Exportar bloques del camino
-    bloques = aco.exportar_camino_lineas_rectas()
-    print(f"\nTotal de bloques en el camino: {len(bloques)}")
-
-    # Visualizar
-    aco.visualizar()
+    city.editor.flushBuffer()

@@ -1,9 +1,8 @@
 from random import randint
 
 from . import grammar_entry_point
-from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, rotate, Rounding, debug_rule
-from .common_rules import corner
-
+from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, Rounding, debug_rule
+from .common_rules import corner, windowed_wall, interior, wall_with_door
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -16,7 +15,7 @@ GATE_BLOCK = 6
 @rule(constraint=(Dimension.Z < 10) | (Dimension.X < 10))
 @debug_rule
 def chaletPlot():
-    chalet()
+    chalet(grammar_entry_point.CURRENT_PLOT.doorPosition)
 
 
 @rule(constraint=(Dimension.Z >= 10) & (Dimension.X >= 10))
@@ -24,24 +23,33 @@ def chaletPlot():
 def chaletPlot():
     """
     NUEVA LÓGICA: Primero dividimos en Z (atrás-centro-adelante)
+    CORREGIDO: Aseguramos que las divisiones cubren toda la parcela
     """
     plot_depth = CONTEXT[-1].get_value(Dimension.Z)
 
     if plot_depth <= 8:
-        chalet()
+        chalet(grammar_entry_point.CURRENT_PLOT.doorPosition)
         return
 
-    # Tamaño del chalet en profundidad (Z)
-    chalet_depth = randint(6, max(6, plot_depth - 3))
+    # Tamaño del chalet en profundidad (Z) - mínimo 6, máximo deja espacio para jardines
+    max_chalet_depth = max(6, plot_depth - 4)  # Dejamos al menos 4 para jardines
+    chalet_depth = randint(6, max_chalet_depth)
 
     # Calcular jardines trasero y delantero
     remaining_depth = plot_depth - chalet_depth
-    if remaining_depth <= 2:
-        chalet()
+
+    # Si no hay espacio suficiente para jardines, solo chalet
+    if remaining_depth < 2:
+        chalet(grammar_entry_point.CURRENT_PLOT.doorPosition)
         return
 
-    garden_depth_back = randint(1, remaining_depth - 2)
+    # Distribuir el espacio restante entre jardines
+    garden_depth_back = randint(1, remaining_depth - 1)
     garden_depth_front = remaining_depth - garden_depth_back
+
+    # VERIFICACIÓN: Asegurar que suma exactamente plot_depth
+    assert garden_depth_back + chalet_depth + garden_depth_front == plot_depth, \
+        f"Error: {garden_depth_back} + {chalet_depth} + {garden_depth_front} != {plot_depth}"
 
     # Split en Z: atrás, centro, adelante
     with split(Dimension.Z, [garden_depth_back, chalet_depth, garden_depth_front], rounding_mode=Rounding.END):
@@ -96,9 +104,9 @@ def chalet_strip():
 
     # Calcular jardines laterales
     remaining_width = plot_width - chalet_width
-    if remaining_width <= 2:
-        chalet()
-        return
+    # if remaining_width <= 2:
+    #     chalet()
+    #     return
 
     # Por ahora distribuimos equitativamente (luego usarás doorPosition)
     garden_width_left = remaining_width // 2
@@ -184,7 +192,7 @@ def front_fence():
     with split(Dimension.Y, [1, 1, -1], rounding_mode=Rounding.END):
         void()
         with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
-            with split(Dimension.X, [left_fence, 1, right_fence], rounding_mode=Rounding.MIDDLE):
+            with split(Dimension.X, [right_fence, 1, left_fence], rounding_mode=Rounding.MIDDLE):
                 fill(FENCE_BLOCK)
                 fill(GATE_BLOCK)
                 fill(FENCE_BLOCK)
@@ -195,39 +203,31 @@ def front_fence():
 
 @rule
 @debug_rule
-def chalet():
-    room()
-
-
-@rule
-@debug_rule
-def house():
-    with split(Dimension.Y, [6, 3, -1], rounding_mode=Rounding.END):
-        walls_and_interior()
-        void()
-
-
-@rule
-@debug_rule
-def walls_and_interior():
-    room()
-
-
-@rule
-@debug_rule
-def room():
-    with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
+def chalet(door_offset=-1):
+    with split(Dimension.Y, [5,-1]):
         with split(Dimension.Z, [-1, -1], rounding_mode=Rounding.END):
-            corner(0)
-            corner(270)
-        with split(Dimension.Z, [-1, -1], rounding_mode=Rounding.END):
-            corner(90)
-            corner(180)
+            chalet_front(door_offset)
+            with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
+                corner(270)
+                corner(180)
+    void()
+
+@rule
+@debug_rule
+def chalet_front(door_offset=-1):
+    # fill(MAIN_BLOCK)
+    # return
+    with split(Dimension.X, [1, -1, 1], rounding_mode=Rounding.END):
+        windowed_wall()
+        with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
+            wall_with_door(door_offset)
+            interior()
+        windowed_wall()
+
 
 @rule
 @debug_rule
 def lawn():
     void()
     return
-    with split(Dimension.Y, [1, -1], rounding_mode=Rounding.END):
-        fill(9)
+    fill(9)

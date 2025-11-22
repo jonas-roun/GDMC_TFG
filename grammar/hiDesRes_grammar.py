@@ -2,7 +2,6 @@ from random import randint
 
 from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, rotate, Rounding, debug_rule
 from .common_rules import windowed_wall, corner_normal, interior, wall_with_door, lit_interior
-from .lowDesRes_grammar import chalet, room
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -90,7 +89,9 @@ def exterior_wall():
     with split(Dimension.X, [1,-1]):
         fill(MAIN_BLOCK)
         with split(Dimension.Z, [-1,1]):
-            interior()
+            with split(Dimension.Y, [-1,1]):
+                void()
+                fill(FLOOR_BLOCK)
             windowed_wall()
 
 

@@ -24,29 +24,8 @@ def construir_ciudad(numero_parcelas: int):
         terminales=lista_puertas
     )
 
-    # ============================================================
-    # Ejecutar optimización
-    # ============================================================
-
-    camino_topologia = aco.optimizar(verbose=True)
-
-    # Puedes obtener las coordenadas Manhattan del camino:
-    camino_bloques = aco.exportar_camino_lineas_rectas()
-
-    # ============================================================
-    # Colocar los bloques del camino en Minecraft
-    # ============================================================
-
-    for (x, z) in camino_bloques:
-        # Obtener altura del terreno en esa celda
-        y = city.heightmap[x, z]-1
-
-        # Colocar bloque (ejemplo: glowstone)
-        city.editor.placeBlock(
-            (x + city.buildArea.offset.x, y, z + city.buildArea.offset.z),
-            Block("glowstone")
-        )
-        city.editor.flushBuffer()
+    # Ejecutar y construir el camino automáticamente
+    aco.ejecutar_y_construir(verbose=True)
 
 def main():
     print("Ejecutando programa...")

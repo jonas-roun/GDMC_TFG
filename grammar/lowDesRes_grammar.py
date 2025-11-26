@@ -2,7 +2,7 @@ from random import randint
 
 from . import grammar_entry_point
 from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, Rounding, debug_rule
-from .common_rules import corner, windowed_wall, interior, wall_with_door
+from .common_rules import corner, windowed_wall, interior, wall_with_door, lit_interior
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -206,10 +206,10 @@ def front_fence():
 def chalet(door_offset=-1):
     with split(Dimension.Y, [5,-1]):
         with split(Dimension.Z, [-1, -1], rounding_mode=Rounding.END):
-            chalet_front(door_offset)
             with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
-                corner(270)
-                corner(180)
+                corner(0)
+                corner(90)
+            chalet_front(door_offset)
     void()
 
 @rule
@@ -219,9 +219,11 @@ def chalet_front(door_offset=-1):
     # return
     with split(Dimension.X, [1, -1, 1], rounding_mode=Rounding.END):
         windowed_wall()
-        with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
+        with split(Dimension.Z, [-1, 1], rounding_mode=Rounding.END):
+            with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
+                lit_interior()
+                lit_interior()
             wall_with_door(door_offset)
-            interior()
         windowed_wall()
 
 

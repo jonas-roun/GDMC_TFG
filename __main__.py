@@ -8,6 +8,9 @@ import algoritmo_genetico as ag
 from gdpc import  Block
 from gdpc.geometry import placeCuboid, placeRectOutline
 
+from urbanismo import models
+
+
 def construir_ciudad(numero_parcelas: int):
     ag.numero_de_parcelas = numero_parcelas
     poblacion, _ = generar_ciudad(10, 200)
@@ -20,6 +23,8 @@ def construir_ciudad(numero_parcelas: int):
         lista_puertas.append(Punto(ciudad[i].gate_coord()[0], ciudad[i].gate_coord()[1],ciudad[i].uso))
         city.editor.flushBuffer()
     #
+
+    models.load_models()
     aco = MinecraftACOSteiner(
         terminales=lista_puertas
     )

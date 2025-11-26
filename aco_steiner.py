@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from heapq import heappush, heappop
 
-from gdpc import Block
+from gdpc import Block, Transform
 
+from urbanismo import models
 from urbanismo.parcela import Parcela
 import city_simulator as city
 
@@ -79,6 +80,14 @@ def obtener_elevacion(x: int, y: int) -> int:
         return city.height_values[x][y]
     except (IndexError, AttributeError):
         return 0
+
+def es_agua(x: int, y: int) -> bool:
+    """Detecta si hay agua en las coordenadas (x, y)"""
+    try:
+        # Ajusta esto según cómo tengas los datos de agua en city_simulator
+        return city.blocks_values[x][y]=="water"
+    except (IndexError, AttributeError):
+        return False
 
 
 def calcular_coste_con_desnivel(x1: int, y1: int, x2: int, y2: int) -> float:
@@ -930,7 +939,7 @@ class MinecraftACOSteiner:
         self.construir_camino_en_minecraft(bloques_camino)
 
         # 4. Postprocesado: añadir elementos laterales
-        self.postprocesar_decoracion_lateral(bloques_camino, cada=15)
+        self.postprocesar_decoracion_lateral(bloques_camino, cada=10)
 
         return bloques_camino
 
@@ -969,7 +978,8 @@ def colocar_decoracion(laterales: Set[Tuple[int,int]], cada: int = 25):
                 y = city.heightmap[x, z] - 1
                 wx = x + city.buildArea.offset.x
                 wz = z + city.buildArea.offset.z
-                city.editor.placeBlock((wx, y + 1, wz), [Block("diamond_block")])
+                # city.editor.placeBlock((wx, y + 1, wz), [Block("diamond_block")])
+                models.lamp_posts[random.randint(0, 1)].build(city.editor, transformLike=Transform((wx - 1, y + 1, wz - 1), rotation=0))
                 bloques_usados.append((x, z))
             except Exception:
                 continue

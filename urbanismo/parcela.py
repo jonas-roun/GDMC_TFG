@@ -98,7 +98,6 @@ class Parcela:
         # city.editor.placeBlock(
         #     (coord[0] + city.buildArea.offset.x, self.altura+3, coord[1] + city.buildArea.offset.z), Block("red_concrete"))
 
-        # Confirmar cambios (importante si usamos buffering=True)
         city.editor.flushBuffer()
 
 

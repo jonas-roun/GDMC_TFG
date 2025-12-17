@@ -1,7 +1,7 @@
 from random import randint
 
-from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, rotate, Rounding, debug_rule
-from .common_rules import windowed_wall, corner_normal, interior, wall_with_door, lit_interior
+from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, Rounding, debug_rule, rotate
+from .common_rules import windowed_wall, wall_with_door, lit_interior, corner_normal
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -28,21 +28,41 @@ def blockPlot():
     remaining = available_height - (floor_height * num_floors)
     if remaining > 0:
         floor_sizes.append(-1)
-
-    with split(Dimension.Y, floor_sizes, rounding_mode=Rounding.END):
-        for _ in range(num_floors):
-            # room()
-            story()
-        if remaining > 0:
-            void()
+    with rotate(90):
+        with split(Dimension.Y, floor_sizes, rounding_mode=Rounding.END):
+            for i in range(num_floors):
+                if i==0:
+                    first_story()
+                else:
+                    story()
+            if remaining > 0:
+                void()
 
 @rule
 @debug_rule
 def story():
+    with split(Dimension.Z, [corridor_width, -1]):
+        with split(Dimension.X, [-1, 1], rounding_mode=Rounding.END):
+            corridor()
+            windowed_wall()
+        with split(Dimension.X, [4,-1], rounding_mode=Rounding.END):
+            with split(Dimension.Z, [5,-1], rounding_mode=Rounding.END):
+                staircase()
+                corner_normal(270)
+            apartment_row()#fill(COLUMN_BLOCK)
 
-    with split(Dimension.Z, [corridor_width,-1]):
-        corridor()
-        apartment_row()
+@rule
+@debug_rule
+def first_story():
+    with split(Dimension.Z, [corridor_width, -1]):
+        with split(Dimension.X, [-1,1], rounding_mode=Rounding.END):
+            corridor()
+            wall_with_door()
+        with split(Dimension.X, [4,-1], rounding_mode=Rounding.END):
+            with split(Dimension.Z, [5,-1], rounding_mode=Rounding.END):
+                first_staircase()
+                corner_normal(270)
+            fill(COLUMN_BLOCK)#apartment_row()
 
 @rule
 @debug_rule
@@ -77,7 +97,8 @@ def apartment():
                 fill(COLUMN_BLOCK)
             with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
                 wall_with_door()
-                lit_interior()
+                with rotate(180):
+                    lit_interior()
         with split(Dimension.Y, [-1, 1], rounding_mode=Rounding.END):
             exterior_wall()
             fill(COLUMN_BLOCK)
@@ -89,9 +110,9 @@ def exterior_wall():
     with split(Dimension.X, [1,-1]):
         fill(MAIN_BLOCK)
         with split(Dimension.Z, [-1,1]):
-            with split(Dimension.Y, [-1,1]):
-                void()
+            with split(Dimension.Y, [1,-1]):
                 fill(FLOOR_BLOCK)
+                void()
             windowed_wall()
 
 
@@ -138,4 +159,27 @@ def open_terrace():
             with split(Dimension.Y, [1,1,-1], rounding_mode=Rounding.END):
                 fill(FLOOR_BLOCK)
                 fill(FENCE_BLOCK)
+                void()
+
+@rule
+@debug_rule
+def staircase():
+    with split(Dimension.X, [-1,1], rounding_mode=Rounding.END):
+        void()
+        with split(Dimension.Z, [-1,1], rounding_mode=Rounding.END):
+            void()
+            with split(Dimension.Y, [1,-1], rounding_mode=Rounding.END):
+                fill(10)
+                void()
+
+@rule
+@debug_rule
+def first_staircase():
+    print("HOLAHOLAHOLAHOLA")
+    with split(Dimension.X, [-1,1], rounding_mode=Rounding.END):
+        void()
+        with split(Dimension.Z, [-1,1], rounding_mode=Rounding.END):
+            void()
+            with split(Dimension.Y, [1,-1], rounding_mode=Rounding.END):
+                fill(11)
                 void()

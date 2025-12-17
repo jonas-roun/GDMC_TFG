@@ -115,3 +115,13 @@ def wall_with_door(door_offset=-1):
                 void()
             fill(MAIN_BLOCK)
         fill(MAIN_BLOCK)
+
+
+@rule(constraint=(Dimension.Z == 2))
+@debug_rule
+def wall_with_door():
+    with split(Dimension.X, [1,1]):
+        fill(MAIN_BLOCK)
+        with split(Dimension.Y, [1,1]):
+            fill(DOOR_BLOCK)
+            void()

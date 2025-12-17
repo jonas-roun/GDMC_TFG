@@ -2,8 +2,6 @@ from functools import partial
 from random import choices, randint, uniform
 from typing import List, Callable, Tuple
 
-import numpy as np
-
 import city_simulator as city
 from urbanismo.parcela import Parcela
 
@@ -32,7 +30,7 @@ def generar_parcela() -> Parcela:
     result.x = randint(0, city.width-TAMANO_MINIMO_PARCELA)
     result.y = randint(0, city.height-TAMANO_MINIMO_PARCELA)
 
-    result.uso = "lowDesRes" #if randint(0,1) == 1    else "hiDesRes"
+    result.uso = "lowDesRes" if randint(0,1) == 0    else "hiDesRes"
 
     # result.generate_floorplan()
     return result
@@ -103,9 +101,9 @@ def mutar_ciudad(ciudad: GenomaCiudad) -> GenomaCiudad:
 #   Aplica una mutación aleatoria a la parcela
 def mutar_parcela(ciudad:GenomaCiudad, i:int):
     modification = uniform(0,1)
-    if(modification < 0.5):
+    if modification < 0.5:
         mover_parcela(ciudad, i)
-    elif(modification <= 1):
+    elif modification <= 1:
         cambiar_tamano_parcela(ciudad, i)
     else:
         print("QUE")

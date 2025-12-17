@@ -83,6 +83,7 @@ def get_room(parcela: Parcela):
     SplitGrammar.register_material(GATE_BLOCK, [Block("oak_fence_gate")])
     SplitGrammar.register_material(LIGHT_BLOCK, parcela.light)
     SplitGrammar.register_material(8, [Block("glass_pane")])
+    SplitGrammar.register_material(10, ["stair_spawn"])
 
     from .GrammarBox import BoundingBox
 

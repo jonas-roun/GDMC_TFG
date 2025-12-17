@@ -32,14 +32,14 @@ def load_models():
 
     for y in range(5):
         for z in range(5):  #side walls
-            first_staircase.setBlock((0, y, z), Block("minecraft:cobblestone"))
-            first_staircase.setBlock((3, y, z), Block("minecraft:cobblestone"))
+            first_staircase.setBlock((0, y, z), Block("cobblestone"))
+            first_staircase.setBlock((3, y, z), Block("cobblestone"))
         for x in range(4):  #back wall
-            first_staircase.setBlock((x, y, 4), Block("minecraft:cobblestone"))
+            first_staircase.setBlock((x, y, 4), Block("cobblestone"))
 
     for x in range(1,3):
         for z in range(0,4):
-            first_staircase.setBlock((x, 0, z), Block("minecraft:oak_planks"))
+            first_staircase.setBlock((x, 0, z), Block("oak_planks"))
 
     first_staircase.setBlock((1, 1, 0), Block("oak_stairs", {"facing": "south"}))
     first_staircase.setBlock((1, 1, 1), Block("oak_stairs", {"facing": "north", "half": "top"}))
@@ -50,16 +50,17 @@ def load_models():
     first_staircase.setBlock((2, 3, 3), Block("oak_planks"))
     first_staircase.setBlock((2, 3, 2), Block("oak_stairs", {"facing": "south", "half": "top"}))
     first_staircase.setBlock((2, 4, 2), Block("oak_stairs", {"facing": "north"}))
-    first_staircase.setBlock((2, 4, 1), Block("oak_stairs", {"facing": "south", "half": "top"}))
+    first_staircase.setBlock((2, 4, 1), Block("oak_planks"))
+    first_staircase.setBlock((2 ,4 ,0), Block("waxed_copper_bulb",{"lit": "true"}))
 
     staircase = Model((4, 5, 5))
 
     for y in range(5):
         for z in range(5):  # side walls
-            staircase.setBlock((0, y, z), Block("minecraft:cobblestone"))
-            staircase.setBlock((3, y, z), Block("minecraft:cobblestone"))
+            staircase.setBlock((0, y, z), Block("cobblestone"))
+            staircase.setBlock((3, y, z), Block("cobblestone"))
         for x in range(4):  # back wall
-            staircase.setBlock((x, y, 4), Block("minecraft:cobblestone"))
+            staircase.setBlock((x, y, 4), Block("cobblestone"))
 
 
     staircase.setBlock((2, 0, 0), Block("oak_planks"))
@@ -75,7 +76,8 @@ def load_models():
     staircase.setBlock((2, 3, 3), Block("oak_planks"))
     staircase.setBlock((2, 3, 2), Block("oak_stairs", {"facing": "south", "half": "top"}))
     staircase.setBlock((2, 4, 2), Block("oak_stairs", {"facing": "north"}))
-    staircase.setBlock((2, 4, 1), Block("oak_stairs", {"facing": "south", "half": "top"}))
+    staircase.setBlock((2, 4, 1), Block("oak_planks"))
+    staircase.setBlock((2 ,4 ,0), Block("glowstone",{"lit": "true"}))
 
 
 editor = Editor(buffering=True)
@@ -88,12 +90,12 @@ editor.loadWorldSlice(cache=True)
 load_models()
 coords_x = buildArea.offset.x + 75
 coords_y = 100
-first_staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=10))
+first_staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
 coords_y+=5
-staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=10))
+staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
 coords_y+=5
-staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=10))
+staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
 coords_y+=5
-staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=10))
+staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
 editor.flushBuffer()
 

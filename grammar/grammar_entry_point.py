@@ -18,6 +18,11 @@ FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
 LIGHT_BLOCK = 7
+WINDOW_BLOCK = 8
+ROOF_BLOCK = 9
+ACCENT_BLOCK = 10
+STAIR_SPAWN = 11
+FIRST_STAIR_SPAWN = 12
 
 CURRENT_PLOT: Parcela
 
@@ -75,15 +80,19 @@ def get_room(parcela: Parcela):
     CURRENT_PLOT = parcela
 
     # Registrar materiales
-    SplitGrammar.register_material(MAIN_BLOCK, parcela.mainBlock)
-    SplitGrammar.register_material(FLOOR_BLOCK, parcela.floorBlock)
-    SplitGrammar.register_material(COLUMN_BLOCK, parcela.columnBlock)
-    SplitGrammar.register_material(FENCE_BLOCK, parcela.fenceBlock)
-    SplitGrammar.register_material(DOOR_BLOCK, parcela.door)
-    SplitGrammar.register_material(GATE_BLOCK, [Block("oak_fence_gate")])
-    SplitGrammar.register_material(LIGHT_BLOCK, parcela.light)
-    SplitGrammar.register_material(8, [Block("glass_pane")])
-    SplitGrammar.register_material(10, ["stair_spawn"])
+    SplitGrammar.register_material(MAIN_BLOCK, [Block(parcela.paleta["primary"])])
+    SplitGrammar.register_material(FLOOR_BLOCK, [Block(parcela.paleta["floor"])])
+    SplitGrammar.register_material(COLUMN_BLOCK, [Block(parcela.paleta["ceiling"])])
+    SplitGrammar.register_material(FENCE_BLOCK, [Block(parcela.paleta["fence"])])
+    SplitGrammar.register_material(DOOR_BLOCK, [Block(parcela.paleta["door"])])
+    SplitGrammar.register_material(GATE_BLOCK, [Block(parcela.paleta["gate"])])
+    SplitGrammar.register_material(LIGHT_BLOCK, [Block(parcela.paleta["light"])])
+    SplitGrammar.register_material(WINDOW_BLOCK, [Block(parcela.paleta["window"])])
+    SplitGrammar.register_material(ROOF_BLOCK, [Block(parcela.paleta["roof"])])
+    SplitGrammar.register_material(ACCENT_BLOCK, [Block(parcela.paleta["accent"])])
+
+    SplitGrammar.register_material(STAIR_SPAWN, ["stair_spawn"])
+    SplitGrammar.register_material(FIRST_STAIR_SPAWN, ["first_stair_spawn"])
 
     from .GrammarBox import BoundingBox
 

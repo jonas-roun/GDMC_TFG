@@ -1,7 +1,7 @@
 from random import randint
 
 from . import grammar_entry_point
-from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, Rounding, debug_rule
+from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, Rounding, debug_rule, rotate
 from .common_rules import corner, windowed_wall, interior, wall_with_door, lit_interior
 
 # ---- Constantes de materiales ----
@@ -11,6 +11,12 @@ COLUMN_BLOCK = 3
 FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
+LIGHT_BLOCK = 7
+WINDOW_BLOCK = 8
+ROOF_BLOCK = 9
+ACCENT_BLOCK = 10
+STAIR_SPAWN = 11
+FIRST_STAIR_SPAWN = 12
 
 @rule(constraint=(Dimension.Z < 10) | (Dimension.X < 10))
 @debug_rule
@@ -44,7 +50,7 @@ def chaletPlot():
         return
 
     # Distribuir el espacio restante entre jardines
-    garden_depth_back = randint(1, remaining_depth - 1)
+    garden_depth_back = randint(1, remaining_depth - 2)
     garden_depth_front = remaining_depth - garden_depth_back
 
     # VERIFICACIÓN: Asegurar que suma exactamente plot_depth
@@ -88,6 +94,8 @@ def garden_front_strip():
             lawn()
             fence()
         front_fence()
+
+
 
 
 @rule
@@ -221,8 +229,10 @@ def chalet_front(door_offset=-1):
         windowed_wall()
         with split(Dimension.Z, [-1, 1], rounding_mode=Rounding.END):
             with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
-                lit_interior()
-                lit_interior()
+                with rotate(270):
+                    lit_interior()
+                with rotate(180):
+                    lit_interior()
             wall_with_door(door_offset)
         windowed_wall()
 
@@ -231,5 +241,4 @@ def chalet_front(door_offset=-1):
 @debug_rule
 def lawn():
     void()
-    return
-    fill(9)
+    #añadir flores

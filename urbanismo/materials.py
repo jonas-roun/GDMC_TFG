@@ -1,105 +1,254 @@
+import sqlite3
 import random
-from typing import List
+from typing import Dict, List, Optional
+from config import BLOCKS_DB_PATH
 
-from gdpc import Block
+class GestorPaletas:
+    def __init__(self, db_path=None):
+        """Inicializa conexión a la base de datos de bloques"""
+        if db_path is None:
+            db_path = BLOCKS_DB_PATH
 
-buildingBricks = ["bricks","mud_bricks","red_nether_bricks","resin_bricks",
-                  "nether_bricks","polished_blackstone_bricks","red_nether_bricks",
-                  "stone_bricks","tuff_bricks","deepslate_bricks","end_stone_bricks",
-                  "quartz_bricks", "deepslate_tiles"] #que hacer con ladrillos prismarina
-#prismarine_bricks->roofing
+        self.conn = sqlite3.connect(db_path)
+        self.conn.row_factory = sqlite3.Row  # Para acceder por nombre de columna
 
-colours = ["white", "light_gray", "gray", "black", "brown", "red", "orange","yellow","lime",
-           "green","cyan", "light_blue","blue","purple","magenta","pink"]
-coloured_blocks = ["concrete", "terracotta"]
+    def _ejecutar_query(self, query: str, params: tuple = ()) -> List[str]:
+        """
+        Ejecuta una query y retorna lista de nombres de bloques.
+        """
+        cursor = self.conn.cursor()
+        cursor.execute(query, params)
+        resultados = cursor.fetchall()
+        return [row['block'] for row in resultados]
 
-woods = ["oak", "spruce", "birch", "jungle", "acacia", "dark_oak",
-              "mangrove", "cherry", "pale_oak", "bamboo", "crimson", "warped"]
-wood_blocks = ["planks", "door", "fence", "log"]
-wall_blocks = ["cobblestone","stone_brick","granite","diorite", "andesite", "cobbled_deepslate", "polished_deepslate", "deepslate_brick", "deepslate_tile", "tuff", "polished_tuff", "tuff_brick", "brick", "mud_brick", "resin_brick", "sandstone", "red_sandstone", "prismarine", "nether_brick", "red_nether_brick", "blackstone", "polished_blackstone", "polished_blackstone_brick", "end_stone_brick"]
+    def _seleccionar_aleatorio(self, bloques: List[str]) -> Optional[str]:
+        """Selecciona un bloque aleatorio de la lista, o None si está vacía"""
+        return random.choice(bloques) if bloques else None
 
-fence_blocks = ["fence", "wall"]
+    # ========================================
+    # Queries por slot de paleta
+    # ========================================
 
-wallBlocks = ["concrete", "cobblestone", "terracotta"] +buildingBricks
+    def get_bloque_suelo(self) -> str:
+        """
+        Suelo: categorías natural, chiseled, log
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'natural'
+                   OR type = 'chiseled'
+                   OR type = 'log' \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "stone"
 
-column_blocks = ["log", "quartz_pillar", "polished_basalt"]
+    def get_bloque_pared_primario(self) -> str:
+        """
+        Pared (primario): categorías natural, chiseled, log
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'natural'
+                   OR type = 'chiseled'
+                   OR type = 'log' OR (type = 'colored' AND categories = 'stone') \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "cobblestone"
+
+    def get_bloque_pared_secundario(self) -> str:
+        """
+        Pared (secundario): categorías natural, chiseled, log
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'natural'
+                   OR type = 'chiseled'
+                   OR type = 'log' OR (type = 'colored' AND categories = 'stone')\
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "oak_planks"
+
+    def get_bloque_techo_ceiling(self) -> str:
+        """
+        Techo (ceiling): categorías natural, chiseled, log
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'natural'
+                   OR type = 'chiseled'
+                   OR type = 'log' OR (type = 'colored' AND categories = 'stone')\
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "dark_oak_planks"
+
+    def get_bloque_techo_roof(self) -> str:
+        """
+        Techo (roof): categorías natural, chiseled, log + tipo slab
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE (type = 'natural'
+                    OR type = 'chiseled'
+                    OR type = 'log')
+                   OR type = 'slab' OR (type = 'colored' AND categories = 'stone')\
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "brick_slab"
+
+    def get_bloque_ventana(self) -> str:
+        """
+        Ventana: material glass O categoría pane
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE categories = 'glass'
+                   OR type = 'pane' \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "glass"
+
+    def get_bloque_stair(self) -> str:
+        """
+        Escaleras: categoría stair
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'stairs' \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "oak_stairs"
+
+    def get_bloque_light(self) -> str:
+        """
+        Iluminación: categoría light
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'light' \
+                '''
+        bloques = self._ejecutar_query(query)
+        # Fallback manual porque todavía no están en la BD
+        return self._seleccionar_aleatorio(bloques) or "torch"
+
+    def get_bloque_valla(self) -> str:
+        """
+        Valla: tipo wall
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'fence' \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "cobblestone_wall"
+
+    def get_bloque_gate(self) -> str:
+        """
+        Puerta de valla: tipo gate
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'gate' \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "oak_fence_gate"
+
+    def get_bloque_door(self) -> str:
+        """
+        Puerta: tipo door
+        """
+        query = '''
+                SELECT block \
+                FROM blocks
+                WHERE type = 'door' \
+                '''
+        bloques = self._ejecutar_query(query)
+        return self._seleccionar_aleatorio(bloques) or "oak_door"
+
+    # ========================================
+    # Generación de paleta completa
+    # ========================================
+
+    def generar_paleta_aleatoria(self) -> Dict[str, str]:
+        """
+        Genera una paleta completa con todos los slots necesarios.
+
+        Returns:
+            Dict con estructura:
+            {
+                'suelo': 'stone',
+                'pared_primario': 'cobblestone',
+                'pared_secundario': 'oak_planks',
+                'techo_ceiling': 'dark_oak_planks',
+                'techo_roof': 'brick_slab',
+                'ventana': 'glass',
+                'stair': 'oak_stairs',
+                'light': 'torch',
+                'valla': 'cobblestone_wall',
+                'gate': 'oak_fence_gate',
+                'door': 'oak_door'
+            }
+        """
+        paleta = {
+            'floor': self.get_bloque_suelo(),
+            'primary': self.get_bloque_pared_primario(),
+            'accent': self.get_bloque_pared_secundario(),
+            'ceiling': self.get_bloque_techo_ceiling(),
+            'roof': self.get_bloque_techo_roof(),
+            'window': self.get_bloque_ventana(),
+            'stair': self.get_bloque_stair(),
+            'light': self.get_bloque_light(),
+            'fence': self.get_bloque_valla(),
+            'gate': self.get_bloque_gate(),
+            'door': self.get_bloque_door()
+        }
+
+        return paleta
+
+    def cerrar(self):
+        """Cierra la conexión a la base de datos"""
+        self.conn.close()
 
 
-door_materials = woods + ["waxed_copper", "waxed_oxidized_copper"]
+# ========================================
+# Función de conveniencia
+# ========================================
 
-#mossy_blocks = ["stone_bricks", "cobblestone"]
-#blocks with a cracked variant
-cracked_blocks = ["stone_bricks", "polished_blackstone_bricks", "deepslate_bricks", "deepslate_tiles","nether_bricks"]
+def generar_paleta_aleatoria() -> Dict[str, str]:
+    """
+    Wrapper simple para generar una paleta sin gestionar la conexión manualmente.
 
-#blocks that dont exist on their own, but are used because of their colour variants or similar
-block_black_list = coloured_blocks+wood_blocks
-
-floorBlocks = ["planks"]
-
-lighting_blocks = ["glowstone", "shroomlight", "sea_lantern", "waxed_copper_bulb"]
-
-flowers = [
-    "allium", "azure_bluet", "blue_orchid", "dandelion", "closed_eyeblossom", "open_eyeblossom", "lily_of_the_valley", "oxeye_daisy", "poppy",
-    "torchflower", "orange_tulip", "pink_tulip", "red_tulip", "white_tulip", "wither_rose", "lilac", "peony", "pitcher_plant", "rose_bush", "sunflower"
-]
-
-def manageBlockVariations(block: str) -> List[Block]:
-    result = []
-
-    if block not in block_black_list:
-        result += [Block(block)]
-
-    if block in coloured_blocks:
-        result += [Block(f"{random.choice(colours)}_{block}")]
-
-    if block in cracked_blocks:
-        result+= [Block("cracked_"+block)]
-
-    if block in wood_blocks:
-        wood_type = random.choice(woods)
-        if block=="log":
-            if wood_type=="crimson" or wood_type=="warped":
-                block = "stem"
-            if wood_type=="bamboo":
-                block = "block"
-        result += [Block(f"{wood_type}_{block}")]
+    Uso:
+        paleta = generar_paleta_aleatoria()
+        print(paleta['suelo'])  # 'stone'
+    """
+    gestor = GestorPaletas()
+    paleta = gestor.generar_paleta_aleatoria()
+    gestor.cerrar()
+    return paleta
 
 
-    return result
+# ========================================
+# Ejemplo de uso
+# ========================================
 
+if __name__ == '__main__':
+    # Generar 5 paletas aleatorias
+    for i in range(5):
+        print(f"\n{'=' * 50}")
+        print(f"PALETA {i + 1}")
+        print('=' * 50)
 
-def getBlock(purpose: str, facing=None, hinge=None, half=None) -> List[Block]:
-    if purpose == "wall":
-        block = random.choice(wallBlocks)
-        return manageBlockVariations(block)
-    elif purpose == "floor":
-        block = random.choice(floorBlocks)
-        return manageBlockVariations(block)
-    elif purpose == "column":
-        block = random.choice(column_blocks)
-        return manageBlockVariations(block)
-    elif purpose == "fence":
-        block = random.choice(fence_blocks)
-        if block == "fence":
-            return [Block(random.choice(woods)+"_fence")]
-        else:
-            return [Block(random.choice(wall_blocks)+"_wall")]
-    elif purpose == "gate":
-        return [Block(random.choice(woods)+"_fence_gate")]
-    elif purpose == "door":
-        return [Block(random.choice(door_materials)+"_door")]
-    elif purpose == "light":
-        block_name = random.choice(lighting_blocks)
-        if block_name == "waxed_copper_bulb":
-            block = [Block(block_name, {"lit":"true"})]
-        else:
-            block = [Block(block_name)]
-        return block
-    elif purpose == "flower":
-        if random.randint(0,10) == 1:
-            return [Block(random.choice(flowers))]
-        else: return [Block("air")]
-    else:
-        raise ValueError(f"Unknown purpose: {purpose}")
-        
-        
+        paleta = generar_paleta_aleatoria()
+
+        for slot, bloque in paleta.items():
+            print(f"  {slot:20s} → {bloque}")

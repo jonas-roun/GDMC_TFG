@@ -8,10 +8,14 @@ import algoritmo_genetico as ag
 from gdpc import  Block
 from gdpc.geometry import placeCuboid, placeRectOutline
 
+from indirect_parametric_encoding import generar_paleta_edificio, crear_genoma_aleatorio
+from interactive_gen_alg import ejecutar_pipeline_completo
 from urbanismo import models
 
+root:tk.Tk
 
 def construir_ciudad(numero_parcelas: int):
+    global root
     ag.numero_de_parcelas = numero_parcelas
     poblacion, _ = generar_ciudad(10, 200)
     ciudad = poblacion[0]  # ahora sí es un GenomaCiudad (lista de parcelas)
@@ -19,9 +23,7 @@ def construir_ciudad(numero_parcelas: int):
     for i in range(len(ciudad)):
         print("parcela: ", ciudad[i],"->", 1/(1+abs(ciudad[i].funcion_adecuacion())))
         ciudad[i].level_plot()
-        ciudad[i].construir()
         lista_puertas.append(Punto(ciudad[i].gate_coord()[0], ciudad[i].gate_coord()[1],ciudad[i].uso))
-        city.editor.flushBuffer()
     #
 
     models.load_models()
@@ -32,7 +34,20 @@ def construir_ciudad(numero_parcelas: int):
     # Ejecutar y construir el camino automáticamente
     aco.ejecutar_y_construir(verbose=True)
 
+    genoma_final = ejecutar_pipeline_completo(root, ciudad)
+    for i in range(len(ciudad)):
+        pos = (ciudad[i].x,ciudad[i].y)  # (x, y) o (x, y, z)
+
+        ciudad[i].paleta = generar_paleta_edificio(
+            pos=pos,
+            genoma=genoma_final
+        )
+        ciudad[i].construir()
+        city.editor.flushBuffer()
+
+
 def main():
+    global root
     print("Ejecutando programa...")
 
     city.setup()

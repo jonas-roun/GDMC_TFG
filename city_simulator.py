@@ -2,6 +2,7 @@
 from gdpc import Editor, Block
 from gdpc.vector_tools import vec3
 
+import indirect_parametric_encoding
 import utils
 
 cell_size = 5
@@ -42,6 +43,8 @@ def setup():
             pos = vec3(buildArea.offset.x + x, heightmap[x][y] - 1, buildArea.offset.z + y)
             bloque = editor.getBlockGlobal(pos)
             blocks_matrix[x][y] = (pos, bloque)
+
+    indirect_parametric_encoding.setup()
 
 
 # ==============================

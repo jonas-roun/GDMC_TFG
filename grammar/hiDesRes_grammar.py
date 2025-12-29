@@ -10,6 +10,12 @@ COLUMN_BLOCK = 3
 FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
+LIGHT_BLOCK = 7
+WINDOW_BLOCK = 8
+ROOF_BLOCK = 9
+ACCENT_BLOCK = 10
+STAIR_SPAWN = 11
+FIRST_STAIR_SPAWN = 12
 
 corridor_width:int
 
@@ -17,7 +23,7 @@ corridor_width:int
 @debug_rule
 def blockPlot():
     global corridor_width
-    if CONTEXT[-1].get_value(Dimension.Z)<8:
+    if CONTEXT[-1].get_value(Dimension.Z)<13:
         void()
         return
     available_height = CONTEXT[-1].get_value(Dimension.Y) // 2
@@ -143,7 +149,7 @@ def enclosed_terrace():
             with split(Dimension.Y, [1,1,2,-1], rounding_mode=Rounding.END):
                 fill(MAIN_BLOCK)
                 fill(COLUMN_BLOCK)
-                fill(8)
+                fill(WINDOW_BLOCK)
                 fill(COLUMN_BLOCK)
 
 
@@ -169,17 +175,16 @@ def staircase():
         with split(Dimension.Z, [-1,1], rounding_mode=Rounding.END):
             void()
             with split(Dimension.Y, [1,-1], rounding_mode=Rounding.END):
-                fill(10)
+                fill(STAIR_SPAWN)
                 void()
 
 @rule
 @debug_rule
 def first_staircase():
-    print("HOLAHOLAHOLAHOLA")
     with split(Dimension.X, [-1,1], rounding_mode=Rounding.END):
         void()
         with split(Dimension.Z, [-1,1], rounding_mode=Rounding.END):
             void()
             with split(Dimension.Y, [1,-1], rounding_mode=Rounding.END):
-                fill(11)
+                fill(FIRST_STAIR_SPAWN)
                 void()

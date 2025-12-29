@@ -9,7 +9,7 @@ import city_simulator as city
 import statistics
 
 from urbanismo import materials
-from urbanismo.materials import getBlock
+from urbanismo.materials import generar_paleta_aleatoria
 from urbanismo.models import staircase, first_staircase
 
 
@@ -29,14 +29,9 @@ class Parcela:
         self.altura = None
         self.uso = None
         self.constructor = None
-        self.mainBlock = getBlock("wall")
-        self.floorBlock = getBlock("floor")
-        self.columnBlock = getBlock("column")
-        self.fenceBlock = getBlock("fence")
-        self.door=getBlock("door")
-        self.light=getBlock("light")
         self.orientation: Direction = None
         self.doorPosition=None
+        self.paleta = None
 
     def definir(self, alto, ancho, x, y, uso):
         self.alto = alto
@@ -86,7 +81,6 @@ class Parcela:
     def construir(self):
         from grammar import grammar_entry_point
         blocks = grammar_entry_point.get_room(self)
-
         def get_model_coords(model: Model,x:int,y:int,z:int) -> (tuple, int):
             if self.orientation == Direction.NORTH:
                 return (x-model.size.x,y,(z+model.size.z//2+1)), 3
@@ -111,12 +105,11 @@ class Parcela:
                 stairs = staircase if block[0]=="stair_spawn" else first_staircase
                 offset, rotation = get_model_coords(stairs, coord[0], coord[1], coord[2])
                 substitutions={
-                    "cobblestone":self.mainBlock[0].id,
-                    "oak_planks": self.floorBlock[0].id,
-                    "glowstone": self.light[0].id,
-                    "oak_stairs":self.floorBlock[0].id.replace("planks","stairs")
+                    "cobblestone":self.paleta["primary"],
+                    "oak_planks": self.paleta["floor"],
+                    "glowstone": self.paleta["light"],
+                    "oak_stairs":self.paleta["stairs"]
                 }
-                print("ADIOSADIOSADIOS: " + block[0])
                 stairs.build(city.editor, transformLike=Transform(
                     (offset[0] + city.buildArea.offset.x, offset[1], offset[2] + city.buildArea.offset.z),
                     rotation=rotation), substitutions=substitutions)

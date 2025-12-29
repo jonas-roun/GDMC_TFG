@@ -11,6 +11,11 @@ FENCE_BLOCK = 4
 DOOR_BLOCK = 5
 GATE_BLOCK = 6
 LIGHT_BLOCK = 7
+WINDOW_BLOCK = 8
+ROOF_BLOCK = 9
+ACCENT_BLOCK = 10
+STAIR_SPAWN = 11
+FIRST_STAIR_SPAWN = 12
 
 
 @rule(probability=9)
@@ -100,7 +105,7 @@ def windows():
                 if i % 2 == 0:
                     fill(MAIN_BLOCK)
                 else:
-                    fill(8)
+                    fill(WINDOW_BLOCK)
 
 
 @rule

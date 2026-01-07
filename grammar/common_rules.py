@@ -1,5 +1,5 @@
 # room_grammar.py - División Z primero, luego X
-from random import randint
+from random import randint, random
 
 from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, rotate, Rounding, debug_rule, reorient
 
@@ -17,18 +17,35 @@ ACCENT_BLOCK = 10
 STAIR_SPAWN = 11
 FIRST_STAIR_SPAWN = 12
 
+CORNER_NORMAL_WEIGHT = 1
+CORNER_INVERTED_WEIGHT = 1
 
-@rule(probability=9)
+CAN_COLLAPSE_CORNER = True
+
+@rule(constraint=(Dimension.X > 4) & (Dimension.Z > 4))
 @debug_rule
 def corner(degrees):
+    global CAN_COLLAPSE_CORNER
+    """
+    Decide entre esquina normal o invertida según pesos proporcionales.
+    Solo puede hacer esquina invertida si hay espacio suficiente.
+    """
+    choice = weighted_random_choice([CORNER_NORMAL_WEIGHT, CORNER_INVERTED_WEIGHT])
+
+    if CAN_COLLAPSE_CORNER and choice == 1:
+        CAN_COLLAPSE_CORNER = False
+        corner_inverted(degrees)
+    else:
+        corner_normal(degrees)
+
+
+@rule  # Esta regla se ejecuta cuando NO cumple el constraint anterior
+@debug_rule
+def corner(degrees):
+    """
+    Si no hay espacio suficiente, siempre esquina normal
+    """
     corner_normal(degrees)
-
-
-@rule(probability=1, constraint=(Dimension.X > 4) & (Dimension.Z > 4))
-@debug_rule
-def corner(degrees):
-    print("corner invertido")
-    corner_inverted(degrees)
 
 
 @rule
@@ -40,6 +57,19 @@ def corner_normal(degrees):
             with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
                 windowed_wall()
                 interior()
+
+
+@rule
+@debug_rule
+def roofed_corner(degrees):
+    with rotate(degrees):
+        with split(Dimension.Y, [5, 1], rounding_mode=Rounding.END):
+            with split(Dimension.X, [1, -1], rounding_mode=Rounding.END):
+                windowed_wall()
+                with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):
+                    windowed_wall()
+                    interior()
+            fill(ROOF_BLOCK)
 
 
 @rule
@@ -130,3 +160,22 @@ def wall_with_door():
         with split(Dimension.Y, [1,1]):
             fill(DOOR_BLOCK)
             void()
+
+
+def weighted_random_choice(weights):
+    """
+    Elige un índice según pesos proporcionales.
+    weights: lista de pesos [w1, w2, w3, ...]
+    Retorna: índice del elemento elegido
+    """
+    total = sum(weights)
+    if total == 0:
+        return 0  # Si todos los pesos son 0, elige el primero
+
+    r = random() * total
+    cumulative = 0
+    for i, weight in enumerate(weights):
+        cumulative += weight
+        if r < cumulative:
+            return i
+    return len(weights) - 1  # Por si acaso, retorna el último

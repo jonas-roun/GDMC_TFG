@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import List, Dict
 import random
+import time
 
 from gdpc import Block
 from gdpc.geometry import placeCuboid
@@ -14,6 +15,9 @@ from indirect_parametric_encoding import (
     crossover_genoma,
     mutar_genoma
 )
+import numpy as np
+
+from iga_logger import IGALogger
 
 # ==============================
 # Constantes configurables
@@ -26,7 +30,7 @@ SIGMA_MUTACION = 0.1
 
 
 # ==============================
-# Función de limpieza (implementar según tu sistema)
+# Función de limpieza
 # ==============================
 def limpiar_area_construccion(ciudad: GenomaCiudad):
     """
@@ -35,18 +39,16 @@ def limpiar_area_construccion(ciudad: GenomaCiudad):
     Args:
         ciudad: Lista de parcelas cuyas áreas deben ser limpiadas
     """
-    # Ejemplo de implementación:
     for parcela in ciudad:
         placeCuboid(city.editor,
-            (parcela.x  + city.buildArea.offset.x,
-             parcela.altura+1,
-             parcela.y  + city.buildArea.offset.z),
-            (parcela.x + city.buildArea.offset.x+parcela.ancho,
-             parcela.altura+150,
-             parcela.y + city.buildArea.offset.z+parcela.alto),
-            Block("air")
-        )
-    city.editor.flushBuffer()
+                    (parcela.x + city.buildArea.offset.x,
+                     parcela.altura + 1,
+                     parcela.y + city.buildArea.offset.z),
+                    (parcela.x + city.buildArea.offset.x + parcela.ancho,
+                     parcela.altura + 150,
+                     parcela.y + city.buildArea.offset.z + parcela.alto),
+                    Block("air")
+                    )
 
 
 # ==============================
@@ -63,6 +65,8 @@ def construir_ciudad_con_genoma(ciudad: GenomaCiudad, genoma_estetico: Dict):
         ciudad: Lista de parcelas (GenomaCiudad) ya optimizada funcionalmente
         genoma_estetico: Genoma del indirect parametric encoding
     """
+    import grammar.grammar_entry_point
+    grammar.grammar_entry_point.asignar_weights(genoma_estetico["enteros"])
     for i in range(len(ciudad)):
         parcela = ciudad[i]
 
@@ -99,6 +103,8 @@ class PopupTorneoEstetico:
         self.genoma_a = genoma_a
         self.genoma_b = genoma_b
         self.seleccion = None  # None, "A" o "B"
+        self.tiempo_inicio = None
+        self.tiempo_decision = None
 
         # Crear ventana modal
         self.ventana = tk.Toplevel(parent)
@@ -117,6 +123,9 @@ class PopupTorneoEstetico:
         x = (self.ventana.winfo_screenwidth() // 2) - (700 // 2)
         y = (self.ventana.winfo_screenheight() // 2) - (350 // 2)
         self.ventana.geometry(f"700x350+{x}+{y}")
+
+        # Iniciar timer
+        self.tiempo_inicio = time.time()
 
     def _crear_interfaz(self, generacion):
         # Título superior
@@ -265,22 +274,77 @@ class PopupTorneoEstetico:
             messagebox.showwarning("Advertencia", "Debes seleccionar un estilo primero")
             return
 
+        # Calcular tiempo de decisión
+        if self.tiempo_inicio is not None:
+            self.tiempo_decision = time.time() - self.tiempo_inicio
+
         self.ventana.destroy()
 
-    def obtener_seleccion(self) -> Dict:
+    def obtener_seleccion(self):
         """
         Muestra el popup y espera a que el usuario seleccione.
-        Retorna el genoma seleccionado.
+        Retorna tupla (genoma_seleccionado, "A"/"B", tiempo_decision).
         """
         self.ventana.wait_window()
 
-        if self.seleccion == "A":
-            return self.genoma_a
-        elif self.seleccion == "B":
-            return self.genoma_b
+        genoma_elegido = self.genoma_a if self.seleccion == "A" else self.genoma_b
+        seleccion_str = self.seleccion if self.seleccion else "A"
+
+        return genoma_elegido, seleccion_str, self.tiempo_decision
+
+
+# ==============================
+# NUEVO: Funciones para manejar los 8 enteros
+# ==============================
+def crear_genoma_con_enteros():
+    """
+    Crea un genoma aleatorio que incluye los 8 enteros.
+    """
+    genoma = crear_genoma_aleatorio()
+    genoma["enteros"] = np.array([random.randint(0, 20) for _ in range(8)])
+    return genoma
+
+
+def crossover_genoma_con_enteros(padre1: Dict, padre2: Dict):
+    """
+    Crossover que incluye los 8 enteros (cruce uniforme para los enteros).
+    """
+    # Crossover normal del genoma estético
+    hijo1, hijo2 = crossover_genoma(padre1, padre2)
+
+    # Cruce uniforme de los 8 enteros
+    enteros1 = []
+    enteros2 = []
+
+    for i in range(8):
+        if random.randint(0, 1) == 0:
+            enteros1.append(padre1["enteros"][i])
+            enteros2.append(padre2["enteros"][i])
         else:
-            # Por defecto, devolver genoma A
-            return self.genoma_a
+            enteros1.append(padre2["enteros"][i])
+            enteros2.append(padre1["enteros"][i])
+
+    hijo1["enteros"] = np.array(enteros1)
+    hijo2["enteros"] = np.array(enteros2)
+
+    return hijo1, hijo2
+
+
+def mutar_genoma_con_enteros(genoma: Dict, prob_mutacion: float = 0.2, sigma: float = 0.1):
+    """
+    Mutación que incluye los 8 enteros.
+    Los enteros se mutan con prob 0.2 cada uno, cambio ±5, garantizando ≥ 0.
+    """
+    # Mutación normal del genoma estético
+    genoma = mutar_genoma(genoma, prob_mutacion, sigma)
+
+    # Mutar los 8 enteros
+    for i in range(8):
+        if random.random() < 0.2:
+            cambio = random.randint(-5, 5)
+            genoma["enteros"][i] = max(0, genoma["enteros"][i] + cambio)
+
+    return genoma
 
 
 # ==============================
@@ -307,46 +371,52 @@ def generar_descendientes(genoma_padre: Dict, n_descendientes: int) -> List[Dict
             "spatial": {k: v.copy() if hasattr(v, 'copy') else v
                         for k, v in genoma_padre["spatial"].items()},
             "slot_offsets": {k: v.copy() for k, v in genoma_padre["slot_offsets"].items()},
-            "distance_weights": genoma_padre["distance_weights"].copy()
+            "distance_weights": genoma_padre["distance_weights"].copy(),
+            "enteros": genoma_padre["enteros"].copy()  # NUEVO
         }
 
-        # Mutar
-        hijo = mutar_genoma(hijo, prob_mutacion=PROB_MUTACION, sigma=SIGMA_MUTACION)
+        # Mutar (incluyendo enteros)
+        hijo = mutar_genoma_con_enteros(hijo, prob_mutacion=PROB_MUTACION, sigma=SIGMA_MUTACION)
         descendientes.append(hijo)
 
     return descendientes
 
 
-def generar_siguiente_generacion(poblacion: List[Dict]) -> List[Dict]:
+def generar_siguiente_generacion(poblacion: List[Dict], preservar_mejor: bool = False, mejor_individuo: Dict = None) -> \
+List[Dict]:
     """
     Genera la siguiente generación mediante crossover y mutación de la población actual.
+    NO añade individuos aleatorios (solo se añaden después del feedback).
 
     Args:
         poblacion: Población actual de genomas
+        preservar_mejor: Si True, incluye el mejor individuo sin modificar (elitismo)
+        mejor_individuo: El individuo a preservar si preservar_mejor=True
 
     Returns:
         Nueva población del mismo tamaño
     """
     nueva_poblacion = []
 
-    # Generar pares de hijos mediante crossover
-    while len(nueva_poblacion) < TAMANO_POBLACION - 1:  # -1 para dejar espacio al aleatorio
+    # ELITISMO: Preservar el mejor individuo sin cambios
+    if preservar_mejor and mejor_individuo is not None:
+        nueva_poblacion.append(mejor_individuo)
+
+    # Generar hijos mediante crossover hasta completar la población
+    while len(nueva_poblacion) < TAMANO_POBLACION:
         # Seleccionar dos padres aleatorios
         padre1, padre2 = random.sample(poblacion, 2)
 
-        # Crossover
-        hijo1, hijo2 = crossover_genoma(padre1, padre2)
+        # Crossover (incluyendo enteros)
+        hijo1, hijo2 = crossover_genoma_con_enteros(padre1, padre2)
 
-        # Mutar
-        hijo1 = mutar_genoma(hijo1, prob_mutacion=PROB_MUTACION, sigma=SIGMA_MUTACION)
-        hijo2 = mutar_genoma(hijo2, prob_mutacion=PROB_MUTACION, sigma=SIGMA_MUTACION)
+        # Mutar (incluyendo enteros)
+        hijo1 = mutar_genoma_con_enteros(hijo1, prob_mutacion=PROB_MUTACION, sigma=SIGMA_MUTACION)
+        hijo2 = mutar_genoma_con_enteros(hijo2, prob_mutacion=PROB_MUTACION, sigma=SIGMA_MUTACION)
 
         nueva_poblacion.append(hijo1)
-        if len(nueva_poblacion) < TAMANO_POBLACION - 1:
+        if len(nueva_poblacion) < TAMANO_POBLACION:
             nueva_poblacion.append(hijo2)
-
-    # Añadir un genoma completamente aleatorio para mantener diversidad
-    nueva_poblacion.append(crear_genoma_aleatorio())
 
     return nueva_poblacion
 
@@ -369,9 +439,13 @@ def ejecutar_iga_estetico(root_window, ciudad_funcional: GenomaCiudad):
     print("🎨 INICIANDO ALGORITMO GENÉTICO INTERACTIVO ESTÉTICO")
     print("=" * 60)
 
-    # Generar población inicial aleatoria
+    # Inicializar logger
+    logger = IGALogger(nombre_experimento="IGA_Aesthetic")
+    tiempo_inicio_total = time.time()
+
+    # Generar población inicial aleatoria (CON LOS 8 ENTEROS)
     print(f"\n📊 Generando población inicial ({TAMANO_POBLACION} individuos)...")
-    poblacion = [crear_genoma_aleatorio() for _ in range(TAMANO_POBLACION)]
+    poblacion = [crear_genoma_con_enteros() for _ in range(TAMANO_POBLACION)]
 
     # Genoma ganador actual (se actualiza en cada generación con feedback)
     genoma_ganador = None
@@ -379,6 +453,7 @@ def ejecutar_iga_estetico(root_window, ciudad_funcional: GenomaCiudad):
     # Evolución
     for gen in range(GENERACIONES_TOTALES):
         es_generacion_feedback = (gen % INTERVALO_FEEDBACK == 0)
+        es_primera_generacion_post_feedback = (gen % INTERVALO_FEEDBACK == 1) and gen > 0
 
         if es_generacion_feedback:
             print(f"\n🎯 GENERACIÓN {gen} (CON FEEDBACK)")
@@ -395,19 +470,66 @@ def ejecutar_iga_estetico(root_window, ciudad_funcional: GenomaCiudad):
                 generacion=gen
             )
 
-            genoma_ganador = popup.obtener_seleccion()
-            print(f"   ✓ Usuario seleccionó un genoma")
+            genoma_ganador, seleccion, tiempo_decision = popup.obtener_seleccion()
+            print(f"   ✓ Usuario seleccionó: {seleccion} (en {tiempo_decision:.1f}s)")
 
-            # Generar 9 descendientes del ganador + 1 aleatorio para la siguiente generación
-            print(f"   📈 Generando {TAMANO_POBLACION - 1} descendientes...")
-            poblacion = generar_descendientes(genoma_ganador, TAMANO_POBLACION - 1)
-            poblacion.append(crear_genoma_aleatorio())  # Diversidad
+            # Registrar en el logger
+            logger.registrar_generacion(
+                gen=gen,
+                es_feedback=True,
+                poblacion=poblacion,
+                ganador=genoma_ganador,
+                seleccion_usuario=seleccion,
+                tiempo_decision=tiempo_decision
+            )
+
+            # Generar 8 descendientes del ganador + 2 aleatorios
+            print(f"   📈 Generando 8 descendientes + 2 aleatorios...")
+            poblacion = generar_descendientes(genoma_ganador, 8)
+            poblacion.append(crear_genoma_con_enteros())
+            poblacion.append(crear_genoma_con_enteros())
+
+        elif es_primera_generacion_post_feedback:
+            print(f"\n🔄 GENERACIÓN {gen} (post-feedback - agregando 2 aleatorios)")
+
+            # En la primera gen después del feedback: añadir 2 aleatorios adicionales
+            nueva_poblacion = generar_siguiente_generacion(
+                poblacion,
+                preservar_mejor=True,
+                mejor_individuo=genoma_ganador
+            )
+
+            # Reemplazar 2 individuos por aleatorios (excepto el ganador)
+            nueva_poblacion[-1] = crear_genoma_con_enteros()
+            nueva_poblacion[-2] = crear_genoma_con_enteros()
+
+            poblacion = nueva_poblacion
+
+            # Registrar generación
+            logger.registrar_generacion(
+                gen=gen,
+                es_feedback=False,
+                poblacion=poblacion,
+                ganador=genoma_ganador
+            )
 
         else:
             print(f"\n🔄 GENERACIÓN {gen} (sin feedback - exploración local)")
 
-            # Generar siguiente generación mediante crossover y mutación
-            poblacion = generar_siguiente_generacion(poblacion)
+            # Generaciones intermedias: solo crossover/mutación
+            poblacion = generar_siguiente_generacion(
+                poblacion,
+                preservar_mejor=True,
+                mejor_individuo=genoma_ganador
+            )
+
+            # Registrar generación
+            logger.registrar_generacion(
+                gen=gen,
+                es_feedback=False,
+                poblacion=poblacion,
+                ganador=genoma_ganador
+            )
 
     print("\n" + "=" * 60)
     print("✅ ALGORITMO GENÉTICO INTERACTIVO COMPLETADO")
@@ -426,7 +548,21 @@ def ejecutar_iga_estetico(root_window, ciudad_funcional: GenomaCiudad):
             generacion=GENERACIONES_TOTALES
         )
 
-        genoma_ganador = popup.obtener_seleccion()
+        genoma_ganador, seleccion, tiempo_decision = popup.obtener_seleccion()
+
+        # Registrar torneo final
+        logger.registrar_generacion(
+            gen=GENERACIONES_TOTALES,
+            es_feedback=True,
+            poblacion=poblacion,
+            ganador=genoma_ganador,
+            seleccion_usuario=seleccion,
+            tiempo_decision=tiempo_decision
+        )
+
+    # Finalizar logging
+    tiempo_total = time.time() - tiempo_inicio_total
+    logger.finalizar(genoma_ganador, tiempo_total)
 
     return genoma_ganador
 

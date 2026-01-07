@@ -1,14 +1,16 @@
 # room_grammar.py - División Z primero, luego X
 from random import randint
+from typing import List
 
 from gdpc import Editor, Block
 
-from grammar import MCSplitGrammar, SplitGrammar
+from grammar import MCSplitGrammar, SplitGrammar, common_rules
 from grammar.MCSplitGrammar import collect_blocks, start_symbol
 from urbanismo.parcela import Parcela, Direction
 from .SplitGrammar import rule, split, fill, void, Dimension, clearrules, CONTEXT, rotate, Rounding, debug_rule
-from .hiDesRes_grammar import blockPlot
-from .lowDesRes_grammar import chaletPlot
+from .hiDesRes_grammar import blockPlot, TERRACE_WEIGHT, WALL_WEIGHT, OPEN_TERRACE_WEIGHT, CLOSED_TERRACE_WEIGHT
+from .lowDesRes_grammar import chaletPlot, GABLE_ROOF_WEIGHT, FLAT_ROOF_WEIGHT
+from .common_rules import CORNER_NORMAL_WEIGHT, CORNER_INVERTED_WEIGHT
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -52,9 +54,7 @@ def plot():
 @debug_rule
 def plot_oriented():
     if CURRENT_PLOT.uso == "lowDesRes":
-        with split(Dimension.Y, [6, -1], rounding_mode=Rounding.END):
-            chaletPlot()
-            void()
+        chaletPlot()
     elif CURRENT_PLOT.uso == "hiDesRes":
         blockPlot()
     else:
@@ -106,3 +106,14 @@ def get_room(parcela: Parcela):
 
     blocks = collect_blocks(sc)
     return blocks
+
+def asignar_weights(weights: List[int]):
+    from grammar import common_rules, lowDesRes_grammar, hiDesRes_grammar
+    common_rules.CORNER_NORMAL_WEIGHT = weights[0]
+    common_rules.CORNER_INVERTED_WEIGHT = weights[1]
+    hiDesRes_grammar.TERRACE_WEIGHT = weights[2]
+    hiDesRes_grammar.WALL_WEIGHT = weights[3]
+    hiDesRes_grammar.CLOSED_TERRACE_WEIGHT = weights[4]
+    hiDesRes_grammar.OPEN_TERRACE_WEIGHT = weights[5]
+    lowDesRes_grammar.GABLE_ROOF_WEIGHT = weights[6]
+    lowDesRes_grammar.FLAT_ROOF_WEIGHT = weights[7]

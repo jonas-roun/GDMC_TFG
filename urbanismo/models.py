@@ -80,22 +80,24 @@ def load_models():
     staircase.setBlock((2 ,4 ,0), Block("glowstone",{"lit": "true"}))
 
 
-editor = Editor(buffering=True)
 
-buildArea = editor.getBuildArea()
 
-# Load world slice of the build area
-editor.loadWorldSlice(cache=True)
-
+# editor = Editor(buffering=True)
+#
+# buildArea = editor.getBuildArea()
+#
+# # Load world slice of the build area
+# editor.loadWorldSlice(cache=True)
+#
 load_models()
-coords_x = buildArea.offset.x + 75
-coords_y = 100
-first_staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
-coords_y+=5
-staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
-coords_y+=5
-staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
-coords_y+=5
-staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
-editor.flushBuffer()
+# coords_x = buildArea.offset.x + 75
+# coords_y = 100
+# first_staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
+# coords_y+=5
+# staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
+# coords_y+=5
+# staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
+# coords_y+=5
+# staircase.build(editor, transformLike=Transform((coords_x, coords_y, buildArea.offset.z), rotation=1))
+# editor.flushBuffer()
 

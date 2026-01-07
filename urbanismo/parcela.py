@@ -1,4 +1,3 @@
-from cmath import inf
 from enum import IntEnum
 
 from gdpc import Block, Transform
@@ -8,8 +7,6 @@ from gdpc.model import Model
 import city_simulator as city
 import statistics
 
-from urbanismo import materials
-from urbanismo.materials import generar_paleta_aleatoria
 from urbanismo.models import staircase, first_staircase
 
 
@@ -98,9 +95,6 @@ class Parcela:
             if isinstance(block[0], Block):
                 city.editor.placeBlock(
                     (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), block)
-            elif block[0]=="flower":
-                city.editor.placeBlock(
-                    (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), materials.getBlock("flower"))
             elif "stair_spawn" in block[0]:
                 stairs = staircase if block[0]=="stair_spawn" else first_staircase
                 offset, rotation = get_model_coords(stairs, coord[0], coord[1], coord[2])

@@ -1,8 +1,8 @@
 from random import randint
 
-from . import grammar_entry_point
+from . import grammar_entry_point, common_rules
 from .SplitGrammar import rule, split, fill, void, Dimension, CONTEXT, Rounding, debug_rule, rotate
-from .common_rules import corner, windowed_wall, interior, wall_with_door, lit_interior
+from .common_rules import roofed_corner, windowed_wall, interior, wall_with_door, lit_interior, weighted_random_choice
 
 # ---- Constantes de materiales ----
 MAIN_BLOCK = 1
@@ -17,6 +17,9 @@ ROOF_BLOCK = 9
 ACCENT_BLOCK = 10
 STAIR_SPAWN = 11
 FIRST_STAIR_SPAWN = 12
+
+GABLE_ROOF_WEIGHT = 1
+FLAT_ROOF_WEIGHT = 1
 
 @rule(constraint=(Dimension.Z < 10) | (Dimension.X < 10))
 @debug_rule
@@ -33,9 +36,9 @@ def chaletPlot():
     """
     plot_depth = CONTEXT[-1].get_value(Dimension.Z)
 
-    if plot_depth <= 8:
-        chalet(grammar_entry_point.CURRENT_PLOT.doorPosition)
-        return
+    # if plot_depth <= 8:
+    #     chalet(grammar_entry_point.CURRENT_PLOT.doorPosition)
+    #     return
 
     # Tamaño del chalet en profundidad (Z) - mínimo 6, máximo deja espacio para jardines
     max_chalet_depth = max(6, plot_depth - 4)  # Dejamos al menos 4 para jardines
@@ -212,33 +215,80 @@ def front_fence():
 @rule
 @debug_rule
 def chalet(door_offset=-1):
-    with split(Dimension.Y, [5,-1]):
+    with split(Dimension.Y, [6,-1]):
         with split(Dimension.Z, [-1, -1], rounding_mode=Rounding.END):
             with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
-                corner(0)
-                corner(90)
+                roofed_corner(0)
+                roofed_corner(90)
             chalet_front(door_offset)
-    void()
+        roof()
+    common_rules.CAN_COLLAPSE_CORNER = True
 
 @rule
 @debug_rule
 def chalet_front(door_offset=-1):
-    # fill(MAIN_BLOCK)
-    # return
-    with split(Dimension.X, [1, -1, 1], rounding_mode=Rounding.END):
-        windowed_wall()
-        with split(Dimension.Z, [-1, 1], rounding_mode=Rounding.END):
-            with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
-                with rotate(270):
-                    lit_interior()
-                with rotate(180):
-                    lit_interior()
-            wall_with_door(door_offset)
-        windowed_wall()
-
+    with split(Dimension.Y, [5,1]):
+        with split(Dimension.X, [1, -1, 1], rounding_mode=Rounding.END):
+            windowed_wall()
+            with split(Dimension.Z, [-1, 1], rounding_mode=Rounding.END):
+                with split(Dimension.X, [-1, -1], rounding_mode=Rounding.END):
+                    with rotate(270):
+                        lit_interior()
+                    with rotate(180):
+                        lit_interior()
+                wall_with_door(door_offset)
+            windowed_wall()
+        fill(ROOF_BLOCK)
 
 @rule
 @debug_rule
 def lawn():
     void()
     #añadir flores
+
+
+@rule
+@debug_rule
+def roof():
+    """
+    Punto de entrada: decide qué tipo de tejado según pesos proporcionales
+    """
+    choice = weighted_random_choice([GABLE_ROOF_WEIGHT, FLAT_ROOF_WEIGHT])
+
+    if common_rules.CAN_COLLAPSE_CORNER and choice == 0:
+        gable_roof()
+    else:  # choice == 1
+        flat_roof()
+
+
+@rule(constraint=Dimension.X > 2)
+@debug_rule
+def gable_roof():
+    """
+    Tejado a dos aguas recursivo - colapsa desde los bordes
+    """
+    with split(Dimension.X, [1, -1, 1], rounding_mode=Rounding.MIDDLE):
+        void()
+        with split(Dimension.Y, [1, -1], rounding_mode=Rounding.END):
+            fill(ROOF_BLOCK)
+            gable_roof()
+        void()
+
+
+@rule(constraint=Dimension.X <= 2)
+@debug_rule
+def gable_roof():
+    """
+    Caso base del tejado a dos aguas - cuando llega al centro
+    """
+
+    void()
+
+
+@rule
+@debug_rule
+def flat_roof():
+    """
+    Tejado plano - simplemente vacío
+    """
+    void()

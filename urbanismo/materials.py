@@ -240,15 +240,15 @@ def generar_paleta_aleatoria() -> Dict[str, str]:
 # ========================================
 # Ejemplo de uso
 # ========================================
-
-if __name__ == '__main__':
-    # Generar 5 paletas aleatorias
-    for i in range(5):
-        print(f"\n{'=' * 50}")
-        print(f"PALETA {i + 1}")
-        print('=' * 50)
-
-        paleta = generar_paleta_aleatoria()
-
-        for slot, bloque in paleta.items():
-            print(f"  {slot:20s} → {bloque}")
+#
+# if __name__ == '__main__':
+#     # Generar 5 paletas aleatorias
+#     for i in range(5):
+#         print(f"\n{'=' * 50}")
+#         print(f"PALETA {i + 1}")
+#         print('=' * 50)
+#
+#         paleta = generar_paleta_aleatoria()
+#
+#         for slot, bloque in paleta.items():
+#             print(f"  {slot:20s} → {bloque}")

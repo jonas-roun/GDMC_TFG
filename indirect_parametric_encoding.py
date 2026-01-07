@@ -28,14 +28,15 @@ SLOT_CONSTRAINTS = {
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
+        OR (type = 'colored' AND material = 'stone')
     """,
-    "wall_primary": """
+    "primary": """
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
         OR (type = 'colored' AND material = 'stone')
     """,
-    "wall_secondary": """
+    "accent": """
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
@@ -51,7 +52,6 @@ SLOT_CONSTRAINTS = {
         (type = 'natural'
          OR type = 'chiseled'
          OR type = 'log')
-        OR type = 'slab'
         OR (type = 'colored' AND material = 'stone')
     """,
     "window": """

@@ -79,20 +79,23 @@ class Parcela:
         from grammar import grammar_entry_point
         blocks = grammar_entry_point.get_room(self)
         def get_model_coords(model: Model,x:int,y:int,z:int) -> (tuple, int):
+            # return (x+model.size.x,y,z-model.size.z//2-1) , 1
             if self.orientation == Direction.NORTH:
                 return (x-model.size.x,y,(z+model.size.z//2+1)), 3
             elif self.orientation == Direction.SOUTH:
                 return (x+model.size.x,y,z-model.size.z//2-1) , 1
             elif self.orientation == Direction.EAST:
-                return (x - model.size.x // 2 - 1, y, z + model.size.z), 2
+                return (x - model.size.x // 2 - 1, y, z - model.size.z+1), 0
             elif self.orientation == Direction.WEST:
-                return (x + model.size.x // 2 + 1, y, z - model.size.z), 0
+                return (x + model.size.x // 2 + 1, y, z + model.size.z-1), 2
             return -1
 
         # Colocar los bloques en el mundo
         for coord, block in blocks.items():
             city.buildable_values[coord[0]][coord[2]] = False
             if isinstance(block[0], Block):
+                if "copper_bulb" in block[0].id:
+                    block[0]=Block(block[0].id, {"lit":"true"})
                 city.editor.placeBlock(
                     (coord[0] + city.buildArea.offset.x, coord[1], coord[2] + city.buildArea.offset.z), block)
             elif "stair_spawn" in block[0]:
@@ -125,7 +128,7 @@ class Parcela:
         result += self.desnivel() * UNEVEN_PENALTY
         result+=abs(self.alto-self.ancho)
         if self.uso== "hiDesRes" and self.ancho<15 and self.alto < 15:
-            return 100000*(15-self.ancho)+10*(15-self.alto)
+            return 100000000000000#*(15-self.ancho)+10*(15-self.alto)
         return result-self.alto*self.ancho/2
 
     def level_plot(self):

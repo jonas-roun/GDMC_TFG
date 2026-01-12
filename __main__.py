@@ -29,7 +29,7 @@ def construir_ciudad(numero_parcelas: int, usar_iga_estetico: bool):
     # FASE 1: Optimización funcional (GA)
     # ========================================
     print("\n" + "=" * 60)
-    print("🏙️ FASE 1: OPTIMIZACIÓN FUNCIONAL")
+    print("🏙️ FASE 1: FUNCTIONAL OPTIMIZATION")
     print("=" * 60)
 
     ag.numero_de_parcelas = numero_parcelas
@@ -94,7 +94,6 @@ def construir_ciudad(numero_parcelas: int, usar_iga_estetico: bool):
     print("🛤️ FASE 4: GENERACIÓN DE CAMINOS")
     print("=" * 60)
 
-    models.load_models()
     aco = MinecraftACOSteiner(terminales=lista_puertas)
     aco.ejecutar_y_construir(verbose=True)
 
@@ -116,7 +115,7 @@ def main():
     # Ventana principal
     # ==============================
     root = tk.Tk()
-    root.title("Generador de Ciudades Minecraft")
+    root.title("Minecraft City Generator")
     root.geometry("900x700")
     root.configure(bg="#2c3e50")
     usar_iga = tk.BooleanVar(value=False)
@@ -129,7 +128,7 @@ def main():
     # Título del panel
     tk.Label(
         frame_controles,
-        text="Panel de Control",
+        text="Control Panel",
         font=("Arial", 16, "bold"),
         bg="#34495e",
         fg="white",
@@ -142,7 +141,7 @@ def main():
     # ========== Delinear zona ==========
     tk.Label(
         frame_controles,
-        text="Zona de Construcción",
+        text="Building Zone",
         font=("Arial", 11, "bold"),
         bg="#34495e",
         fg="#ecf0f1",
@@ -151,7 +150,7 @@ def main():
 
     tk.Button(
         frame_controles,
-        text="📍 Delinear Zona",
+        text="📍 Outline area",
         command=lambda: (
             placeRectOutline(city.editor, city.buildArea.toRect(), 140, Block("spruce_leaves")),
             city.editor.flushBuffer()
@@ -168,7 +167,7 @@ def main():
     # ========== Refrescar mapas ==========
     tk.Label(
         frame_controles,
-        text="Actualizar Información",
+        text="Update Information",
         font=("Arial", 11, "bold"),
         bg="#34495e",
         fg="#ecf0f1",
@@ -177,7 +176,7 @@ def main():
 
     tk.Button(
         frame_controles,
-        text="🔄 Refrescar Mapas",
+        text="🔄 Reload Maps",
         command=lambda: city.refresh_maps(),
         bg="#9b59b6",
         fg="white",
@@ -194,7 +193,7 @@ def main():
     # ========== Configuración de ciudad ==========
     tk.Label(
         frame_controles,
-        text="Configuración de Ciudad",
+        text="City Configuration",
         font=("Arial", 11, "bold"),
         bg="#34495e",
         fg="#ecf0f1",
@@ -204,7 +203,7 @@ def main():
     # Número de parcelas
     tk.Label(
         frame_controles,
-        text="Número de parcelas:",
+        text="Numer of Lots:",
         font=("Arial", 10),
         bg="#34495e",
         fg="#bdc3c7"
@@ -224,7 +223,7 @@ def main():
     # Checkbox para IGA
     check_iga = tk.Checkbutton(
         frame_controles,
-        text="Usar IGA para estética",
+        text="Use IGA for Aesthetics",
         variable=usar_iga,
         font=("Arial", 10),
         bg="#34495e",
@@ -238,7 +237,7 @@ def main():
     # Tooltip/descripción
     tk.Label(
         frame_controles,
-        text="(Si está marcado, podrás elegir\nel estilo interactivamente)",
+        text="(If checked, you'll choose style interactively)",
         font=("Arial", 8),
         bg="#34495e",
         fg="#95a5a6",
@@ -248,7 +247,7 @@ def main():
     # Botón construir ciudad
     tk.Button(
         frame_controles,
-        text="🏗️ Construir Ciudad",
+        text="🏗️ Build City",
         command=lambda: construir_ciudad(
             int(entrada_parcelas.get()),
             usar_iga.get()
@@ -271,7 +270,7 @@ def main():
     # Título del panel de mapas
     tk.Label(
         frame_derecha,
-        text="Visualización del Terreno",
+        text="Terrain Visualization",
         font=("Arial", 16, "bold"),
         bg="#2c3e50",
         fg="white",
@@ -296,10 +295,10 @@ def main():
     frame_botones_mapa.pack(pady=10)
 
     botones_mapa = [
-        ("🟢 Bloques", "blocks", "#27ae60"),
-        ("⛰️ Altitud", "height", "#3498db"),
-        ("📐 Inclinación", "inclination", "#e67e22"),
-        ("🏗️ Edificabilidad", "buildable", "#9b59b6")
+        ("🟢 Blocks", "blocks", "#27ae60"),
+        ("⛰️ Height", "height", "#3498db"),
+        ("📐 Slope", "inclination", "#e67e22"),
+        ("🏗️ Buildable", "buildable", "#9b59b6")
     ]
 
     for texto, tipo, color in botones_mapa:

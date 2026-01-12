@@ -970,7 +970,7 @@ def colocar_decoracion(laterales: Set[Tuple[int,int]], cada: int = 25):
 
     laterales = list(laterales)  # convertir a lista
     random.shuffle(laterales)    # opcional, para que no sea siempre en el mismo lado
-
+    farola = models.lamp_posts[random.randint(0, 1)]
     for x, z in laterales:
         # Comprobar distancia a bloques ya colocados
         if all(abs(x - bx) + abs(z - bz) >= cada for bx, bz in bloques_usados):
@@ -979,7 +979,7 @@ def colocar_decoracion(laterales: Set[Tuple[int,int]], cada: int = 25):
                 wx = x + city.buildArea.offset.x
                 wz = z + city.buildArea.offset.z
                 # city.editor.placeBlock((wx, y + 1, wz), [Block("diamond_block")])
-                models.lamp_posts[random.randint(0, 1)].build(city.editor, transformLike=Transform((wx - 1, y + 1, wz - 1), rotation=0))
+                farola.build(city.editor, transformLike=Transform((wx - 1, y + 1, wz - 1), rotation=0))
                 bloques_usados.append((x, z))
             except Exception:
                 continue

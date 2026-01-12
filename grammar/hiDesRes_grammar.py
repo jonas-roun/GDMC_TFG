@@ -34,7 +34,7 @@ def blockPlot():
     available_height = CONTEXT[-1].get_value(Dimension.Y) // 2
     floor_height = 5
     num_floors = randint(2, (available_height // floor_height))
-    corridor_width = randint(2, 4)
+    corridor_width = 2#min(randint(2, 4), CONTEXT[-1].get_value(Dimension.Z-6))
     floor_sizes = [floor_height] * num_floors
     floor_sizes.append(1)
     remaining = available_height - (floor_height * num_floors) -1
@@ -108,8 +108,11 @@ def apartment_row():
 
     # Si no cabe ni uno, no hacemos nada
     if num_apartments < 1:
-        void()
+        # corner_normal(180)
+        # void()
+        apartment()
         return
+
 
     # Ancho real de cada apartamento (equitativo)
     apartment_width = available_width // num_apartments
@@ -133,7 +136,7 @@ def apartment_row():
 @rule
 @debug_rule
 def apartment():
-    with split(Dimension.Z, [-1,3]):
+    with split(Dimension.Z, [-1,2]):
         with split(Dimension.X, [-1, 1], rounding_mode=Rounding.START):
 
             with split(Dimension.Z, [1, -1], rounding_mode=Rounding.END):

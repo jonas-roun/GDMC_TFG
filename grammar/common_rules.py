@@ -114,7 +114,7 @@ def windowed_wall():
         fill(MAIN_BLOCK)
 
 
-@rule
+@rule(constraint=(Dimension.X>2) | (Dimension.Z>2))
 @debug_rule
 def windows():
     L = CONTEXT[-1].get_value(Dimension.LARGEST)
@@ -137,6 +137,10 @@ def windows():
                 else:
                     fill(WINDOW_BLOCK)
 
+@rule
+@debug_rule
+def windows():
+    fill(WINDOW_BLOCK)
 
 @rule
 @debug_rule

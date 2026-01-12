@@ -11,7 +11,6 @@ from colorsys import rgb_to_hsv
 
 PALETTE_SLOTS = [
     "primary",
-    "accent",
     "floor",
     "ceiling",
     "roof",
@@ -25,34 +24,32 @@ PALETTE_SLOTS = [
 
 SLOT_CONSTRAINTS = {
     "floor": """
+        NOT material = 'glass' AND (
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
-        OR (type = 'colored' AND material = 'stone')
+        OR (type = 'colored' AND material = 'stone'))
     """,
     "primary": """
+        NOT material = 'glass' AND (
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
-        OR (type = 'colored' AND material = 'stone')
+        OR (type = 'colored' AND material = 'stone'))
     """,
-    "accent": """
+    "ceiling":  """
+        NOT material = 'glass' AND (
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
-        OR (type = 'colored' AND material = 'stone')
+        OR (type = 'colored' AND material = 'stone'))
     """,
-    "ceiling": """
+    "roof":  """
+        NOT material = 'glass' AND (
         type = 'natural'
         OR type = 'chiseled'
         OR type = 'log'
-        OR (type = 'colored' AND material = 'stone')
-    """,
-    "roof": """
-        (type = 'natural'
-         OR type = 'chiseled'
-         OR type = 'log')
-        OR (type = 'colored' AND material = 'stone')
+        OR (type = 'colored' AND material = 'stone'))
     """,
     "window": """
         categories = 'glass'
@@ -95,28 +92,28 @@ class VocabularyBuilder:
         self.material_vocab = self._build_vocab('material')
         self.categories_vocab = self._build_vocab('categories')
         self.processing_vocab = self._build_vocab('processing')
-        self.biome_vocab = self._build_vocab('biome')
+        # self.biome_vocab ELIMINADO - no se usa
 
         # Dimensionalidad total
         self.n_color = 4  # h, s, v, a (solo HSV + alpha)
         self.n_material = len(self.material_vocab)
         self.n_categories = len(self.categories_vocab)
         self.n_processing = len(self.processing_vocab)
-        self.n_biome = len(self.biome_vocab)
+        # self.biome_vocab ELIMINADO - no se usa
 
         self.n_total = (
                 self.n_color +
                 self.n_material +
                 self.n_categories +
-                self.n_processing +
-                self.n_biome
+                self.n_processing #+
+                # self.n_biome
         )
 
         print(f"📊 Vocabulario construido:")
         print(f"   Material: {self.n_material} valores")
         print(f"   Categories: {self.n_categories} valores")
         print(f"   Processing: {self.n_processing} valores")
-        print(f"   Biome: {self.n_biome} valores")
+        # print Biome ELIMINADO
         print(f"   Total dimensiones: {self.n_total}")
 
     def _build_vocab(self, column: str) -> Dict[str, int]:
@@ -170,7 +167,7 @@ class BlockEmbeddings:
             material_one_hot...,                    # Material (n_material dims)
             categories_one_hot...,                  # Categories (n_categories dims)
             processing_one_hot...,                  # Processing (n_processing dims)
-            biome_one_hot...                        # Biome (n_biome dims)
+            # XXX_biome_REMOVED_XXX_one_hot ELIMINADO
         ]
 
         Todas las dimensiones están en [0, 1].
@@ -186,8 +183,7 @@ class BlockEmbeddings:
                               a,
                               material,
                               categories,
-                              processing,
-                              biome
+                              processing
                        FROM blocks
                        WHERE block = ?
                        ''', (block_name,))
@@ -204,7 +200,7 @@ class BlockEmbeddings:
             offset += self.vocab.n_categories
             vector[offset + self.vocab.processing_vocab['<UNK>']] = 1.0
             offset += self.vocab.n_processing
-            vector[offset + self.vocab.biome_vocab['<UNK>']] = 1.0
+            # vector[offset + self.vocab.biome_vocab['<UNK>']] = 1.0
             self._cache[block_name] = vector
             return vector
 
@@ -255,12 +251,7 @@ class BlockEmbeddings:
         offset += self.vocab.n_processing
 
         # Biome (one-hot)
-        biome_val = row['biome'] if row['biome'] else '<UNK>'
-        if biome_val in self.vocab.biome_vocab:
-            idx = self.vocab.biome_vocab[biome_val]
-            vector[offset + idx] = 1.0
-        else:
-            vector[offset + self.vocab.biome_vocab['<UNK>']] = 1.0
+        # XXX_biome_REMOVED_XXX handling ELIMINADO
 
         self._cache[block_name] = vector
         return vector
@@ -336,7 +327,7 @@ def crear_genoma_aleatorio():
     distance_weights = np.random.uniform(
         low=0.5,  # Mínimo: no ignorar completamente
         high=3.0,  # Máximo: puede ser muy importante
-        size=5
+        size=4  # SIN BIOME
     )
     # ==========================================================
 
@@ -428,7 +419,7 @@ class WeightedDistance:
         self.processing_mask = slice(offset, offset + vocab.n_processing)
 
         offset += vocab.n_processing
-        self.biome_mask = slice(offset, offset + vocab.n_biome)
+        # self.biome_mask ELIMINADO
 
         # Pesos por componente (5 valores)
         if weights is None:
@@ -442,7 +433,7 @@ class WeightedDistance:
         self.W_MATERIAL = 1
         self.W_CATEGORIES = 2
         self.W_PROCESSING = 3
-        self.W_BIOME = 4
+        # W_BIOME = 4  # ELIMINADO
 
     def compute(self, vec_a: np.ndarray, vec_b: np.ndarray) -> float:
         """
@@ -473,8 +464,8 @@ class WeightedDistance:
         dist_sq += self.weights[self.W_PROCESSING] * np.sum(processing_diff ** 2)
 
         # Biome
-        biome_diff = vec_a[self.biome_mask] - vec_b[self.biome_mask]
-        dist_sq += self.weights[self.W_BIOME] * np.sum(biome_diff ** 2)
+        # self.biome_mask ELIMINADO
+        # dist_sq += self.weights[self.W_BIOME] * np.sum(biome_diff ** 2)
 
         return np.sqrt(dist_sq)
 
@@ -640,7 +631,7 @@ def mutar_genoma(genoma: Dict, prob_mutacion: float = 0.2, sigma: float = 0.1):
 
     # ========== NUEVO: Mutar distance weights ==========
     if random.random() < prob_mutacion:
-        noise = np.random.normal(0, 0.2, size=5)
+        noise = np.random.normal(0, 0.2, size=4)  # SIN BIOME
         genoma["distance_weights"] = np.clip(
             genoma["distance_weights"] + noise,
             0.1,  # Mínimo: no anular completamente
@@ -655,15 +646,18 @@ def mutar_genoma(genoma: Dict, prob_mutacion: float = 0.2, sigma: float = 0.1):
 vocab: VocabularyBuilder
 embeddings: BlockEmbeddings
 
+
 def setup():
+    """Inicializa el vocabulario y embeddings. DEBE llamarse antes de usar el módulo."""
     global vocab, embeddings
-    # Construir vocabulario
+
     print("\n1. Construyendo vocabulario...")
     vocab = VocabularyBuilder('data/blocks.db')
 
-    # Crear embeddings manager
     print("\n2. Inicializando embeddings...")
     embeddings = BlockEmbeddings(vocab, 'data/blocks.db')
+
+    return vocab, embeddings  # NUEVO: Retornar para uso externo
 
 
 # ==============================

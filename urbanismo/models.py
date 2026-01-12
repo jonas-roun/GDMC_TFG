@@ -51,7 +51,7 @@ def load_models():
     first_staircase.setBlock((2, 3, 2), Block("oak_stairs", {"facing": "south", "half": "top"}))
     first_staircase.setBlock((2, 4, 2), Block("oak_stairs", {"facing": "north"}))
     first_staircase.setBlock((2, 4, 1), Block("oak_planks"))
-    first_staircase.setBlock((2 ,4 ,0), Block("waxed_copper_bulb",{"lit": "true"}))
+    first_staircase.setBlock((2 ,4 ,0), Block("glowstone"))
 
     staircase = Model((4, 5, 5))
 
@@ -77,7 +77,7 @@ def load_models():
     staircase.setBlock((2, 3, 2), Block("oak_stairs", {"facing": "south", "half": "top"}))
     staircase.setBlock((2, 4, 2), Block("oak_stairs", {"facing": "north"}))
     staircase.setBlock((2, 4, 1), Block("oak_planks"))
-    staircase.setBlock((2 ,4 ,0), Block("glowstone",{"lit": "true"}))
+    staircase.setBlock((2 ,4 ,0), Block("glowstone"))
 
 
 

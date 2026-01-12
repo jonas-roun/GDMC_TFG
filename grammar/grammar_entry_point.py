@@ -43,7 +43,7 @@ def plot():
     """
     Rota la parcela aleatoriamente 0, 90, 180 o 270 grados
     """
-    orientacion = (CURRENT_PLOT.orientation)%4
+    orientacion = CURRENT_PLOT.orientation % 4
     rotation_degrees = orientacion * 90  # 0, 90, 180, 270
 
     with rotate(rotation_degrees):
@@ -89,7 +89,7 @@ def get_room(parcela: Parcela):
     SplitGrammar.register_material(LIGHT_BLOCK, [Block(parcela.paleta["light"])])
     SplitGrammar.register_material(WINDOW_BLOCK, [Block(parcela.paleta["window"])])
     SplitGrammar.register_material(ROOF_BLOCK, [Block(parcela.paleta["roof"])])
-    SplitGrammar.register_material(ACCENT_BLOCK, [Block(parcela.paleta["accent"])])
+    # SplitGrammar.register_material(ACCENT_BLOCK, ...) # ELIMINADO - accent no se usa
 
     SplitGrammar.register_material(STAIR_SPAWN, ["stair_spawn"])
     SplitGrammar.register_material(FIRST_STAIR_SPAWN, ["first_stair_spawn"])

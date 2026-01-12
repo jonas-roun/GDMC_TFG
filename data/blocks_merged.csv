@@ -390,6 +390,3 @@ stripped_crimson_stem,log,wood,natural,crimson,,129.0,57.0,86.5,255.0,335
 stripped_warped_stem,log,wood,natural,warped,,55.0,139.5,135.5,255.0,177
 glowstone,light,stone,natural,stone,,173.0,132.0,85.0,255.0,32
 waxed_copper_bulb,light,metal,processed,copper,,153.0,85.0,55.0,255.0,18
-waxed_exposed_copper_bulb,light,metal,processed,copper,,133.0,106.0,89.0,255.0,23
-waxed_weathered_copper_bulb,light,metal,processed,copper,,91.0,125.0,99.0,255.0,134
-waxed_oxidized_copper_bulb,light,metal,processed,copper,,69.0,131.0,108.0,255.0,158
